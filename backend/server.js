@@ -1,34 +1,42 @@
 const express = require("express");
-const { Pool } = require("pg");
 const cors = require("cors");
 require("dotenv").config();
+const db = require("../database/db");
+const usersRoutes = require("./routes/users");
 
 const app = express();
+
 app.use(cors());
 app.use(express.json());
-
-const db = new Pool({
-    host: process.env.DB_HOST,
-    user: process.env.DB_USER,
-    password: process.env.DB_PASSWORD,
-    database: process.env.DB_DATABASE,
-    port: parseInt(process.env.DB_PORT, 10),
-    ssl: { rejectUnauthorized: false }
-});
 
 app.get("/", (req, res) => {
     res.send("API Funksionon");
 });
 
-app.listen(5000, () => {
-    console.log("Serveri funksionon ne portin 5000");
+app.get("/test-db", (req, res) => {
+  db.query("SELECT 1 AS status", (err, results) => {
+    if (err) {
+      return res.status(500).json({ error: err.message });
+    }
+
+    res.json(results);
+  });
 });
 
-app.get("/test-db", async (req, res) => {
-  try {
-    const result = await db.query("SELECT table_name FROM information_schema.tables WHERE table_schema='public'");
-    res.json(result.rows);
-  } catch (err) {
-    res.status(500).send(err.message);
-  }
+app.get("/tabela", (req, res) => {
+  db.query("SHOW TABLES", (err, results) => {
+    if (err) return res.status(500).json({ error: err.message });
+    res.json(results);
+  });
+});
+
+app.use("/users", usersRoutes);
+
+app.use((err, req, res, next) => {
+  console.error(err.stack);
+  res.status(500).json({ message: "Server error" });
+});
+
+app.listen(5000, () => {
+    console.log("Serveri funksionon ne portin 5000");
 });
