@@ -50,7 +50,7 @@ const createEvent = (req, res) =>{
 
         res.status(201).json({
             message: "Eventi u shtua me sukses",
-            user: result.rows[0]
+            event: result.rows[0]
         });
     });
 };
