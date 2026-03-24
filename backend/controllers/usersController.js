@@ -1,43 +1,44 @@
-const express = require("express");
+const bcrypt = require("bcryptjs");
 const db = require("../../database/db");
 
-const router = express.Router();
-
-router.get("/", (req, res) => {
+const getUsers = (req, res) => {
   db.query("SELECT * FROM Users ORDER BY id ASC", (err, results) => {
     if (err) {
       return res.status(500).json({ error: err.message });
     }
 
-    res.json(results);
+    res.json(results.rows);
   });
-});
+};
 
-router.get("/:id", (req, res) => {
+const getUserById = (req, res) => {
   const { id } = req.params;
 
-  db.query("SELECT * FROM Users WHERE id = ?", [id], (err, results) => {
+  db.query("SELECT * FROM Users WHERE id = $1", [id], (err, results) => {
     if (err) {
       return res.status(500).json({ error: err.message });
     }
 
-    if (results.length === 0) {
+    if (results.rows.length === 0) {
       return res.status(404).json({ message: "User nuk u gjet" });
     }
 
-    res.json(results[0]);
+    res.json(results.rows[0]);
   });
-});
+};
 
-router.post("/", (req, res) => {
+const createUser = (req, res) => {
   const { emri, email, password, roli } = req.body;
 
   if (!emri || !email || !password || !roli) {
     return res.status(400).json({ message: "Ploteso emri, email, password dhe roli" });
   }
 
-  const sql = "INSERT INTO Users (emri, email, password, roli) VALUES (?, ?, ?, ?)";
-  const values = [emri, email, password, roli];
+  const hashedPassword = bcrypt.hashSync(password, 10);
+
+  const sql =
+    "INSERT INTO Users (emri, email, password, roli) VALUES ($1, $2, $3, $4) RETURNING id, emri, email, roli";
+  const values = [emri, email, hashedPassword, roli];
 
   db.query(sql, values, (err, result) => {
     if (err) {
@@ -46,12 +47,12 @@ router.post("/", (req, res) => {
 
     res.status(201).json({
       message: "User u shtua me sukses",
-      id: result.insertId
+      user: result.rows[0]
     });
   });
-});
+};
 
-router.put("/:id", (req, res) => {
+const updateUser = (req, res) => {
   const { id } = req.params;
   const { emri, email, password, roli } = req.body;
 
@@ -59,7 +60,7 @@ router.put("/:id", (req, res) => {
     return res.status(400).json({ message: "Ploteso emri, email, password dhe roli" });
   }
 
-  const sql = "UPDATE Users SET emri = ?, email = ?, password = ?, roli = ? WHERE id = ?";
+  const sql = "UPDATE Users SET emri = $1, email = $2, password = $3, roli = $4 WHERE id = $5";
   const values = [emri, email, password, roli, id];
 
   db.query(sql, values, (err, result) => {
@@ -67,28 +68,34 @@ router.put("/:id", (req, res) => {
       return res.status(500).json({ error: err.message });
     }
 
-    if (result.affectedRows === 0) {
+    if (result.rowCount === 0) {
       return res.status(404).json({ message: "User nuk u gjet" });
     }
 
     res.json({ message: "User u perditesua me sukses" });
   });
-});
+};
 
-router.delete("/:id", (req, res) => {
+const deleteUser = (req, res) => {
   const { id } = req.params;
 
-  db.query("DELETE FROM Users WHERE id = ?", [id], (err, result) => {
+  db.query("DELETE FROM Users WHERE id = $1", [id], (err, result) => {
     if (err) {
       return res.status(500).json({ error: err.message });
     }
 
-    if (result.affectedRows === 0) {
+    if (result.rowCount === 0) {
       return res.status(404).json({ message: "User nuk u gjet" });
     }
 
     res.json({ message: "User u fshi me sukses" });
   });
-});
+};
 
-module.exports = router;
+module.exports = {
+  getUsers,
+  getUserById,
+  createUser,
+  updateUser,
+  deleteUser
+};

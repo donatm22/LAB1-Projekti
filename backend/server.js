@@ -1,13 +1,17 @@
 const express = require("express");
 const cors = require("cors");
 require("dotenv").config();
+const passport = require("passport");
 const db = require("../database/db");
-const usersRoutes = require("./routes/users");
+const usersRoutes = require("./routes/usersRoutes");
+const authRoutes = require("./routes/authRoutes");
+require("./config/passport");
 
 const app = express();
 
 app.use(cors());
 app.use(express.json());
+app.use(passport.initialize());
 
 app.get("/", (req, res) => {
     res.send("API Funksionon");
@@ -19,24 +23,30 @@ app.get("/test-db", (req, res) => {
       return res.status(500).json({ error: err.message });
     }
 
-    res.json(results);
+    res.json(results.rows);
   });
 });
 
 app.get("/tabela", (req, res) => {
-  db.query("SHOW TABLES", (err, results) => {
-    if (err) return res.status(500).json({ error: err.message });
-    res.json(results);
-  });
+  db.query(
+    "SELECT table_name FROM information_schema.tables WHERE table_schema = 'public' ORDER BY table_name",
+    (err, results) => {
+      if (err) return res.status(500).json({ error: err.message });
+      res.json(results.rows);
+    }
+  );
 });
 
 app.use("/users", usersRoutes);
+app.use("/auth", authRoutes);
 
 app.use((err, req, res, next) => {
   console.error(err.stack);
   res.status(500).json({ message: "Server error" });
 });
 
-app.listen(5000, () => {
-    console.log("Serveri funksionon ne portin 5000");
+const PORT = process.env.PORT || 5000;
+
+app.listen(PORT, () => {
+    console.log(`Serveri funksionon ne portin ${PORT}`);
 });
