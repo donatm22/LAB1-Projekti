@@ -21,7 +21,7 @@ const getEventById = (req, res) => {
         }
         if(results.rows.length === 0){
             return res.status(404).json({
-                message: "User nuk u gjet"
+                message: "Eventi nuk u gjet"
             });
         }
         res.json(results.rows[0]);
@@ -81,7 +81,7 @@ const updateEvent = (req, res) =>{
         }
 
         res.status(201).json({
-            message: "User u shtua me sukses",
+            message: "Eventi u shtua me sukses",
         });
     });
 };
