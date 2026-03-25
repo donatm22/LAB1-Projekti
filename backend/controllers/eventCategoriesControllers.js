@@ -1,7 +1,7 @@
 const db = require ("../../database/db");
 
 const getEventCategories = (req, res) =>{
-    db.query =("SELECT * FROM EventCategories", (err, result) =>{
+    db.query =("SELECT * FROM EventCategories ORDER BY id ASC", (err, result) =>{
         if(err){
             return res.status(500).json({
                 error: err.message
@@ -13,7 +13,7 @@ const getEventCategories = (req, res) =>{
 
 const getEventCategoriesByID = (req, res) =>{
     const {id} = req.params;
-    db.query = ("SELECT * FROM EventCategories WHERE id = $1", [id], (err, result) =>{
+    db.query = ("SELECT * FROM EventCategories WHERE id = $1 ORDER", [id], (err, result) =>{
         if(err){
             return res.status(500).json({
                 error: err.message
@@ -55,7 +55,7 @@ const updateEventCategories = (req, res) =>{
             message: "Input jo valid!"
         });
     }
-    db.query = ("UPDATE EventCategories SET emri = $1 WHERE id = $1", [emri, id], (err, result) =>{
+    db.query = ("UPDATE EventCategories SET emri = $1 WHERE id = $1 RETURNING *", [emri, id], (err, result) =>{
         if(err){
             return res.status(500).json({
                 error: err.message
