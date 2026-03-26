@@ -109,5 +109,5 @@ module.exports = {
     getSpeakersByID,
     createSpeakers,
     updateSpeakers,
-    deleteSpeaker
+    deleteSpeakers
 };
