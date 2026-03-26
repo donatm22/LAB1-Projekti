@@ -83,3 +83,23 @@ const updateSpeakers = (req, res) => {
         }
     );
 };
+
+const deleteSpeaker = (req, res) =>{
+    const {id} = req.params;
+    
+    db.query("DELETE FROM Speakers WHERE id = $1", [id], (err, result) =>{
+        if(err){
+            return res.status(500).json({
+                error: err.message
+            });
+        }
+        if(result.rowCount === 0){
+            return res.status(404).json({
+                message:" Speaker nuk u fshi me sukses!"
+            });
+        }
+        res.status(201).json({
+            message: "Speaker eshte fshire me sukses"
+        });
+    });
+};
