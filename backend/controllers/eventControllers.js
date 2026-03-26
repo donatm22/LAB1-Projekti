@@ -89,7 +89,7 @@ const updateEvent = (req, res) =>{
 const deleteEvent = (req, res) => {
     const {id} = req.params;
 
-    db.query("DELETE FROM Events WHERE id = ?", [id], (err, result) => {
+    db.query("DELETE FROM Events WHERE id = $1", [id], (err, result) => {
         if(err){
             return res.status(500).json({
                 error: err.message

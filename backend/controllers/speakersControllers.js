@@ -77,7 +77,7 @@ const updateSpeakers = (req, res) => {
                 });
             }
             res.json({
-                message: "Speaker-i u përditësua me sukses",
+                message: "Speaker-i u përditesua me sukses",
                 speaker: result.rows[0]
             });
         }

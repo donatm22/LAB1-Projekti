@@ -5,6 +5,9 @@ const passport = require("passport");
 const db = require("../database/db");
 const usersRoutes = require("./routes/usersRoutes");
 const authRoutes = require("./routes/authRoutes");
+const eventCategoriesRoutes = require("./routes/eventCategoriesRoutes");
+const eventRoutes = require("./routes/eventRoutes");
+const speakerRouters = require("./routes/speakerRoutes");
 require("./config/passport");
 
 const app = express();
@@ -39,6 +42,9 @@ app.get("/tabela", (req, res) => {
 
 app.use("/users", usersRoutes);
 app.use("/auth", authRoutes);
+app.use("/eventCategories", eventCategoriesRoutes);
+app.use("speaker", speakerRouters);
+app.use("event", eventRoutes);
 
 app.use((err, req, res, next) => {
   console.error(err.stack);
