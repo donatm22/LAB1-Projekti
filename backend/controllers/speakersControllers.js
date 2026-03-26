@@ -84,7 +84,7 @@ const updateSpeakers = (req, res) => {
     );
 };
 
-const deleteSpeaker = (req, res) =>{
+const deleteSpeakers = (req, res) =>{
     const {id} = req.params;
     
     db.query("DELETE FROM Speakers WHERE id = $1", [id], (err, result) =>{
@@ -102,4 +102,12 @@ const deleteSpeaker = (req, res) =>{
             message: "Speaker eshte fshire me sukses"
         });
     });
+};
+
+module.exports = {
+    getSpeakers,
+    getSpeakersByID,
+    createSpeakers,
+    updateSpeakers,
+    deleteSpeaker
 };
