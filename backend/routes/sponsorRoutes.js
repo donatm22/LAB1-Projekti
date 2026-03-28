@@ -5,7 +5,7 @@ const{
     createSponsor,
     updateSponsor,
     deleteSponsor
-} = require ("../controllers/sponsorControllers");
+} = require ("../controllers/sponsorController");
 
 const router = express.Router();
 
