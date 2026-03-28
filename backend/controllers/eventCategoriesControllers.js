@@ -13,7 +13,7 @@ const getEventCategories = (req, res) =>{
 
 const getEventCategoriesByID = (req, res) =>{
     const {id} = req.params;
-    db.query("SELECT * FROM EventCategories WHERE id = $1 ORDER", [id], (err, result) =>{
+    db.query("SELECT * FROM EventCategories WHERE id = $1", [id], (err, result) =>{
         if(err){
             return res.status(500).json({
                 error: err.message
@@ -49,13 +49,14 @@ const createEventCategories = (req, res) =>{
 };
 
 const updateEventCategories = (req, res) =>{
+    const { id } = req.params;
     const {emri} = req.body;
     if(!emri){
         return res.status(400).json({
             message: "Input jo valid!"
         });
     }
-    db.query("UPDATE EventCategories SET emri = $1 WHERE id = $1 RETURNING *", [emri, id], (err, result) =>{
+    db.query("UPDATE EventCategories SET emri = $1 WHERE id = $2 RETURNING *", [emri, id], (err, result) =>{
         if(err){
             return res.status(500).json({
                 error: err.message
@@ -75,7 +76,7 @@ const updateEventCategories = (req, res) =>{
 const deleteEventCategories = (req, res) =>{
     const {id} = req.params;
     
-    db.query("DELETE FROM EventCategories WHERE id = 1$", [id], (err, result) =>{
+    db.query("DELETE FROM EventCategories WHERE id = $1", [id], (err, result) =>{
         if(err){
             return res.status(500).json({
                 error: err.message
