@@ -1,7 +1,7 @@
 const express = require("express");
 const{
         getEventCategories,
-    getEventCategoriesByID,
+    getEventCategoriesById,
     createEventCategories,
     updateEventCategories,
     deleteEventCategories
@@ -11,7 +11,7 @@ const router = express.Router();
 
 router.get("/", getEventCategories);
 
-router.get("/:id", getEventCategoriesByID);
+router.get("/:id", getEventCategoriesById);
 
 router.post("/", createEventCategories);
 

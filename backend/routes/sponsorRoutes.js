@@ -1,7 +1,7 @@
 const express = require("express");
 const{
     getSponsors,
-    getSponsorByID,
+    getSponsorById,
     createSponsor,
     updateSponsor,
     deleteSponsor
@@ -11,7 +11,7 @@ const router = express.Router();
 
 router.get("/", getSponsors);
 
-router.get("/:id", getSponsorByID);
+router.get("/:id", getSponsorById);
 
 router.post("/", createSponsor);
 

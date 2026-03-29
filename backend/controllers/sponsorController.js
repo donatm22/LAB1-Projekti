@@ -11,7 +11,7 @@ const getSponsors = (req, res) => {
     });
 };
 
-const getSponsorByID = (req, res) => {
+const getSponsorById = (req, res) => {
     const { id } = req.params;
     db.query("SELECT * FROM Sponsors WHERE id = $1", [id], (err, result) => {
         if (err) {
@@ -77,7 +77,7 @@ const updateSponsor = (req, res) => {
                 });
             }
             res.json({
-                message: "Sponsori u përditesua me sukses",
+                message:"Sponsori u përditesua me sukses",
                 sponsor: result.rows[0]
             });
         }
@@ -95,10 +95,10 @@ const deleteSponsor = (req, res) =>{
         }
         if(result.rowCount === 0){
             return res.status(404).json({
-                message:" Sponsori nuk u fshi me sukses!"
+                message:"Sponsori nuk u fshi me sukses!"
             });
         }
-        res.status(201).json({
+        res.status(200).json({
             message: "Sponsori eshte fshire me sukses"
         });
     });
@@ -106,7 +106,7 @@ const deleteSponsor = (req, res) =>{
 
 module.exports = {
     getSponsors,
-    getSponsorByID,
+    getSponsorById,
     createSponsor,
     updateSponsor,
     deleteSponsor

@@ -11,7 +11,7 @@ const getSpeakers = (req, res) => {
     });
 };
 
-const getSpeakersByID = (req, res) => {
+const getSpeakersById = (req, res) => {
     const { id } = req.params;
     db.query("SELECT * FROM Speakers WHERE id = $1", [id], (err, result) => {
         if (err) {
@@ -21,7 +21,7 @@ const getSpeakersByID = (req, res) => {
         }
         if (result.rows.length === 0) {
             return res.status(404).json({
-                message: "Speakers nuk u gjet"
+                message: "Speaker nuk u gjet"
             });
         }
         res.json(result.rows[0]);
@@ -73,11 +73,11 @@ const updateSpeakers = (req, res) => {
             }
             if (result.rows.length === 0) {
                 return res.status(404).json({
-                    message: "Speaker nuk u gjet"
+                    message:"Speaker nuk u gjet"
                 });
             }
             res.json({
-                message: "Speaker-i u përditesua me sukses",
+                message:"Speaker-i u perditesua me sukses",
                 speaker: result.rows[0]
             });
         }
@@ -98,7 +98,7 @@ const deleteSpeakers = (req, res) =>{
                 message:" Speaker nuk u fshi me sukses!"
             });
         }
-        res.status(201).json({
+        res.status(200).json({
             message: "Speaker eshte fshire me sukses"
         });
     });
@@ -106,7 +106,7 @@ const deleteSpeakers = (req, res) =>{
 
 module.exports = {
     getSpeakers,
-    getSpeakersByID,
+    getSpeakersById,
     createSpeakers,
     updateSpeakers,
     deleteSpeakers

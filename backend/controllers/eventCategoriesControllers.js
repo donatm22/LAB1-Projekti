@@ -11,7 +11,7 @@ const getEventCategories = (req, res) =>{
     });
 };
 
-const getEventCategoriesByID = (req, res) =>{
+const getEventCategoriesById = (req, res) =>{
     const {id} = req.params;
     db.query("SELECT * FROM EventCategories WHERE id = $1", [id], (err, result) =>{
         if(err){
@@ -67,7 +67,7 @@ const updateEventCategories = (req, res) =>{
                 message: "Nuk u shtua Kategoria e perditesuar!"
             });
         }
-        res.status(201).json({
+        res.status(200).json({
             message:"Kategoria u perditesua me sukses",
         });
     });
@@ -87,7 +87,7 @@ const deleteEventCategories = (req, res) =>{
                 message:" Kategoria e Eventit nuk u fshi me sukses!"
             });
         }
-        res.status(201).json({
+        res.status(200).json({
             message: "Kategoria e Eventit eshte fshire me sukses"
         });
     });
@@ -95,7 +95,7 @@ const deleteEventCategories = (req, res) =>{
 
 module.exports = {
     getEventCategories,
-    getEventCategoriesByID,
+    getEventCategoriesById,
     createEventCategories,
     updateEventCategories,
     deleteEventCategories

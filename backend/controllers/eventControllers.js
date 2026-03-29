@@ -13,7 +13,7 @@ const getEvents = (req, res) => {
 
 const getEventById = (req, res) => {
     const {id} = req.params;
-    db.query("SELECT * FROM Events WHERE id = ?", [id], (err, results)  => {
+    db.query("SELECT * FROM Events WHERE id = $1", [id], (err, results)  => {
         if(err){
             return res.status(500).json({
                 error: err.message
@@ -38,7 +38,7 @@ const createEvent = (req, res) =>{
     }
 
     const sql =
-    "INSERT INTO Events (titulli, pershkrimi, data_fillimit, data_perfundimit, lokacioni, kapaciteti, statusi , organizer_id, category_id, imazhi) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10) RETURNING titulli, pershkrimi, data_fillimit, data_perfundimit, lokacioni, kapaciteti, statusi , organizer_id, category_id, imazhi";
+    "INSERT INTO Events (titulli, pershkrimi, data_fillimit, data_perfundimit, lokacioni, kapaciteti, statusi , organizer_id, category_id, imazhi) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10) RETURNING *";
     const values = [titulli, pershkrimi, data_fillimit, data_perfundimit, lokacioni, kapaciteti, statusi , organizer_id, category_id, imazhi];
 
     db.query(sql, values, (err, result) => {
@@ -57,6 +57,7 @@ const createEvent = (req, res) =>{
 
 const updateEvent = (req, res) =>{
     const {titulli, pershkrimi, data_fillimit, data_perfundimit, lokacioni, kapaciteti, statusi , organizer_id, category_id, imazhi} = req.body;
+    const {id} = req.params;
 
     if(!titulli || !pershkrimi || !data_fillimit || !data_perfundimit || !lokacioni || !kapaciteti || !statusi || !organizer_id || !category_id || !imazhi){
         return res.status(400).json({
@@ -65,8 +66,8 @@ const updateEvent = (req, res) =>{
     }
 
     const sql =
-    "UPDATE  Events  SET titulli = $1, pershkrimi = $2, data_fillimit = $3, data_perfundimit = $4, lokacioni = $5, kapaciteti = $6, statusi = $7 , organizer_id = $8, category_id = $9, imazhi = $10"; 
-    const values = [titulli, pershkrimi, data_fillimit, data_perfundimit, lokacioni, kapaciteti, statusi , organizer_id, category_id, imazhi];
+    "UPDATE  Events  SET titulli = $1, pershkrimi = $2, data_fillimit = $3, data_perfundimit = $4, lokacioni = $5, kapaciteti = $6, statusi = $7 , organizer_id = $8, category_id = $9, imazhi = $10 WHERE id = $11"; 
+    const values = [titulli, pershkrimi, data_fillimit, data_perfundimit, lokacioni, kapaciteti, statusi , organizer_id, category_id, imazhi, id];
 
     db.query(sql, values, (err, result) => {
         if (err){
@@ -80,8 +81,8 @@ const updateEvent = (req, res) =>{
             });
         }
 
-        res.status(201).json({
-            message: "Eventi u shtua me sukses",
+        res.status(200).json({
+            message: "Eventi u perditesua me sukses",
         });
     });
 };
@@ -97,7 +98,7 @@ const deleteEvent = (req, res) => {
         }
         if(result.rowCount === 0){
             return res.status(404).json({
-                message: "Eventi nuk eshte fshire me sukses!"
+                message: "Eventi nuk u gjet!"
             });
         }
 

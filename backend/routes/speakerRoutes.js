@@ -1,7 +1,7 @@
 const express = require("express");
 const{
     getSpeakers,
-    getSpeakersByID,
+    getSpeakersById,
     createSpeakers,
     updateSpeakers,
     deleteSpeakers
@@ -11,7 +11,7 @@ const router = express.Router();
 
 router.get("/", getSpeakers);
 
-router.get("/:id", getSpeakersByID);
+router.get("/:id", getSpeakersById);
 
 router.post("/", createSpeakers);
 
