@@ -1,4 +1,6 @@
 const express = require("express");
+const verifyToken = require("../middleware/authMiddleware");
+const allowRoles = require("../middleware/roleMiddleware");
 const {
   getUsers,
   getUserById,
@@ -9,19 +11,14 @@ const {
 
 const router = express.Router();
 
-// GET /users - get all users
 router.get("/", getUsers);
 
-// GET /users/:id - get a single user by id
 router.get("/:id", getUserById);
 
-// POST /users - create a new user
 router.post("/create", createUser);
 
-// PUT /users/:id - update an existing user
-router.put("/update/:id", updateUser);
+router.put("/update/:id", verifyToken, allowRoles("admin"), updateUser);
 
-// DELETE /users/:id - delete a user by id
-router.delete("/deleteUser/:id", deleteUser);
+router.delete("/deleteUser/:id", verifyToken, allowRoles("admin"), deleteUser);
 
 module.exports = router;

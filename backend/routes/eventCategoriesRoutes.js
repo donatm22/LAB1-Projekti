@@ -1,4 +1,6 @@
 const express = require("express");
+const verifyToken = require("../middleware/authMiddleware");
+const allowRoles = require("../middleware/roleMiddleware");
 const{
         getEventCategories,
     getEventCategoriesById,
@@ -13,10 +15,10 @@ router.get("/", getEventCategories);
 
 router.get("/:id", getEventCategoriesById);
 
-router.post("/", createEventCategories);
+router.post("/", verifyToken, allowRoles("admin", "organizer"), createEventCategories);
 
-router.put("/:id", updateEventCategories);
+router.put("/:id", verifyToken, allowRoles("admin", "organizer"), updateEventCategories);
 
-router.delete("/:id", deleteEventCategories);
+router.delete("/:id", verifyToken, allowRoles("admin"), deleteEventCategories);
 
 module.exports = router;

@@ -1,4 +1,6 @@
 const express = require("express");
+const verifyToken = require("../middleware/authMiddleware");
+const allowRoles = require("../middleware/roleMiddleware");
 const{
     getSpeakers,
     getSpeakersById,
@@ -13,10 +15,10 @@ router.get("/", getSpeakers);
 
 router.get("/:id", getSpeakersById);
 
-router.post("/", createSpeakers);
+router.post("/", verifyToken, allowRoles("admin", "organizer"), createSpeakers);
 
-router.put("/:id", updateSpeakers);
+router.put("/:id", verifyToken, allowRoles("admin", "organizer"), updateSpeakers);
 
-router.delete("/:id", deleteSpeakers);
+router.delete("/:id", verifyToken, allowRoles("admin"), deleteSpeakers);
 
 module.exports = router;

@@ -1,4 +1,6 @@
 const express = require("express");
+const verifyToken = require("../middleware/authMiddleware");
+const allowRoles = require("../middleware/roleMiddleware");
 const{
     getSponsors,
     getSponsorById,
@@ -13,10 +15,10 @@ router.get("/", getSponsors);
 
 router.get("/:id", getSponsorById);
 
-router.post("/", createSponsor);
+router.post("/", verifyToken, allowRoles("admin", "organizer"), createSponsor);
 
-router.put("/:id", updateSponsor);
+router.put("/:id", verifyToken, allowRoles("admin", "organizer"), updateSponsor);
 
-router.delete("/:id", deleteSponsor);
+router.delete("/:id", verifyToken, allowRoles("admin"), deleteSponsor);
 
 module.exports = router;
