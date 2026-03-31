@@ -1,4 +1,6 @@
 const db = require("../../database/db");
+const { buildPDF } = require("../services/ticketService");
+
 
 const getTickets = (req, res) => {
     db.query("SELECT * FROM Tickets ORDER BY id ASC", (err, result) => {
@@ -111,10 +113,32 @@ const deleteTicket = (req, res) => {
     });
 };
 
+
+const getTicketPDF = async (req, res) => {
+
+    // static info per testim deri t'shtojm te dhena ne DB
+    const ticket = {
+        ticketId: 'TKT-001',
+        eventName: 'Sunny Hill Festival - 2026',
+        eventDate: '21 June 2026',
+        eventTime: '14:00 – 05:00 (next morning)',
+        venue: 'Berrnice',
+        attendeeName: 'Filan Fisteku'
+    };
+
+    res.writeHead(200, {
+        'Content-Type': 'application/pdf',
+        'Content-Disposition': `attachment; filename="ticket-${ticket.ticketId}.pdf"`
+    });
+
+    buildPDF((chunk) => res.write(chunk), () => res.end(), ticket);
+};
+
 module.exports = {
     getTickets,
     getTicketByID,
     createTicket,
     updateTicket,
-    deleteTicket
+    deleteTicket,
+    getTicketPDF
 };

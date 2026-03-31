@@ -1,6 +1,12 @@
-if(!roles.includes(req.user.roli)){
-    return resizeBy.status(403).json({
-        message:"Acess denied"
-    });
-}
-next();
+const allowRoles = (...roles) => {
+    return (req, res, next) => {
+        if (!roles.includes(req.user.roli)) {
+            return res.status(403).json({
+                message: "Access denied"
+            });
+        }
+        next();
+    };
+};
+
+module.exports = allowRoles;
