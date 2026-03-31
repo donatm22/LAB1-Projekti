@@ -10,7 +10,9 @@ const eventRoutes = require("./routes/eventRoutes");
 const speakerRoutes = require("./routes/speakerRoutes");
 const ticketRoutes = require("./routes/ticketRoutes");
 const sponsorRoutes = require("./routes/sponsorRoutes");
+const feedbackRoutes = require("./routes/feedbackRoutes");
 require("./config/passport");
+
 
 const app = express();
 
@@ -49,6 +51,7 @@ app.use("/speaker", speakerRoutes);
 app.use("/event", eventRoutes);
 app.use("/ticket", ticketRoutes);
 app.use("/sponsor", sponsorRoutes);
+app.use("/feedback", feedbackRoutes);
 
 app.use((err, req, res, next) => {
   console.error(err.stack);
