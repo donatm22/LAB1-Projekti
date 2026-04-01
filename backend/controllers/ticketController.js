@@ -3,7 +3,7 @@ const { buildPDF, generateTicketQR } = require("../services/ticketService");
 
 
 const getTickets = (req, res) => {
-    db.query("SELECT * FROM Tickets ORDER BY id ASC", (err, result) => {
+    db.query('SELECT * FROM "Tickets" ORDER BY id ASC', (err, result) => {
         if (err) {
             return res.status(500).json({
                 error: err.message
@@ -15,7 +15,7 @@ const getTickets = (req, res) => {
 
 const getTicketByID = (req, res) => {
     const { id } = req.params;
-    db.query("SELECT * FROM Tickets WHERE id = $1", [id], (err, result) => {
+    db.query('SELECT * FROM "Tickets" WHERE id = $1', [id], (err, result) => {
         if (err) {
             return res.status(500).json({
                 error: err.message
@@ -31,17 +31,17 @@ const getTicketByID = (req, res) => {
 };
 
 const createTicket = (req, res) => {
-    const { event_id, lloji, cmimi, sasia_disponueshme } = req.body;
+    const { event_id, tipi, cmimi, sasia } = req.body;
 
-    if (!event_id || !lloji || !cmimi || !sasia_disponueshme) {
+    if (!event_id || !tipi || !cmimi || !sasia) {
         return res.status(400).json({
             message: "Te dhenat nuk u vendosen"
         });
     }
 
     db.query(
-        "INSERT INTO Tickets (event_id, lloji, cmimi, sasia_disponueshme) VALUES($1, $2, $3, $4) RETURNING *",
-        [event_id, lloji, cmimi, sasia_disponueshme],
+        'INSERT INTO "Tickets" (event_id, tipi, cmimi, sasia) VALUES($1, $2, $3, $4) RETURNING *',
+        [event_id, tipi, cmimi, sasia],
         (err, result) => {
             if (err) {
                 return res.status(500).json({
@@ -63,17 +63,17 @@ const createTicket = (req, res) => {
 
 const updateTicket = (req, res) => {
     const { id } = req.params;
-    const { event_id, lloji, cmimi, sasia_disponueshme } = req.body;
+    const { event_id, tipi, cmimi, sasia } = req.body;
 
-    if (!event_id || !lloji || !cmimi || !sasia_disponueshme) {
+    if (!event_id || !tipi || !cmimi || !sasia) {
         return res.status(400).json({
             message: "Te dhenat nuk jane vendosur"
         });
     }
 
     db.query(
-        "UPDATE Tickets SET event_id = $1, lloji = $2, cmimi = $3, sasia_disponueshme = $4 WHERE id = $5 RETURNING *",
-        [event_id, lloji, cmimi, sasia_disponueshme, id],
+        'UPDATE "Tickets" SET event_id = $1, tipi = $2, cmimi = $3, sasia = $4 WHERE id = $5 RETURNING *',
+        [event_id, tipi, cmimi, sasia, id],
         (err, result) => {
             if (err) {
                 return res.status(500).json({
@@ -96,7 +96,7 @@ const updateTicket = (req, res) => {
 const deleteTicket = (req, res) => {
     const { id } = req.params;
 
-    db.query("DELETE FROM Tickets WHERE id = $1", [id], (err, result) => {
+    db.query('DELETE FROM "Tickets" WHERE id = $1', [id], (err, result) => {
         if (err) {
             return res.status(500).json({
                 error: err.message

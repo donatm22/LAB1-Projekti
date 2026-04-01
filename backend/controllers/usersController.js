@@ -7,7 +7,7 @@ const isAdmin = (req) => req.user?.roli === "admin";
 const canAccessUser = (req, userId) => isAdmin(req) || Number(req.user?.id) === Number(userId);
 
 const getUsers = (req, res) => {
-  db.query("SELECT id, emri, email, roli FROM Users ORDER BY id ASC", (err, results) => {
+  db.query('SELECT id, emri, email, roli FROM "Users" ORDER BY id ASC', (err, results) => {
     if (err) {
       return res.status(500).json({ error: err.message });
     }
@@ -23,7 +23,7 @@ const getUserById = (req, res) => {
     return res.status(403).json({ message: "Access denied" });
   }
 
-  db.query("SELECT id, emri, email, roli FROM Users WHERE id = $1", [id], (err, results) => {
+  db.query('SELECT id, emri, email, roli FROM "Users" WHERE id = $1', [id], (err, results) => {
     if (err) {
       return res.status(500).json({ error: err.message });
     }
@@ -46,7 +46,7 @@ const createUser = (req, res) => {
   const hashedPassword = bcrypt.hashSync(password, 10);
 
   const sql =
-    "INSERT INTO Users (emri, email, password, roli) VALUES ($1, $2, $3, $4) RETURNING id, emri, email, roli";
+    'INSERT INTO "Users" (emri, email, password, roli) VALUES ($1, $2, $3, $4) RETURNING id, emri, email, roli';
   const values = [emri, email, hashedPassword, roli];
 
   db.query(sql, values, (err, result) => {
@@ -55,7 +55,9 @@ const createUser = (req, res) => {
         return res.status(409).json({ message: "Email already exists" });
       }
 
-      return res.status(500).json({ error: err.message });
+      return res.status(500).json({  error: err.message,
+  code: err.code,
+  detail: err.detail });
     }
 
     res.status(201).json({
@@ -77,7 +79,7 @@ const updateUser = (req, res) => {
     return res.status(400).json({ message: "Ploteso emri dhe email" });
   }
 
-  db.query("SELECT * FROM Users WHERE id = $1", [id], (err, result) => {
+  db.query('SELECT * FROM "Users" WHERE id = $1', [id], (err, result) => {
     if (err) {
       return res.status(500).json({ error: err.message });
     }
@@ -91,7 +93,7 @@ const updateUser = (req, res) => {
     const nextPassword = password ? bcrypt.hashSync(password, 10) : existingUser.password;
 
     db.query(
-      "UPDATE Users SET emri = $1, email = $2, password = $3, roli = $4 WHERE id = $5 RETURNING id, emri, email, roli",
+      'UPDATE "Users" SET emri = $1, email = $2, password = $3, roli = $4 WHERE id = $5 RETURNING id, emri, email, roli',
       [emri, email, nextPassword, nextRole, id],
       (updateErr, updateResult) => {
         if (updateErr) {
@@ -114,7 +116,7 @@ const updateUser = (req, res) => {
 const deleteUser = (req, res) => {
   const { id } = req.params;
 
-  db.query("DELETE FROM Users WHERE id = $1", [id], (err, result) => {
+  db.query('DELETE FROM "Users" WHERE id = $1', [id], (err, result) => {
     if (err) {
       return res.status(500).json({ error: err.message });
     }

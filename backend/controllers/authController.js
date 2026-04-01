@@ -49,7 +49,7 @@ const login = (req, res) => {
 
 const getCurrentSession = (req, res) => {
   db.query(
-    "SELECT id, emri, email, roli FROM Users WHERE id = $1",
+    'SELECT id, emri, email, roli FROM "Users" WHERE id = $1',
     [req.user.id],
     (err, result) => {
       if (err) {

@@ -8,15 +8,15 @@ const {
     createFeedback,
     updateFeedback,
     deleteFeedback
-} = require("../controllers/feedbackControllers");
+} = require("../controllers/feedbackController");
 
 const router = express.Router();
 
 router.get("/", getFeedbacks);
 
-router.get("/:id", getFeedbackById);
-
 router.get("/event/:event_id", getFeedbackByEvent);
+
+router.get("/:id", getFeedbackById);
 
 router.post("/", verifyToken, allowRoles("admin", "organizer", "attendee"), createFeedback);
 

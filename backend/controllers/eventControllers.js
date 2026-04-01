@@ -1,7 +1,7 @@
 const db = require("../../database/db");
 
 const getEvents = (req, res) => {
-    db.query("SELECT * FROM Events ORDER BY id ASC", (err, results) =>{
+    db.query('SELECT * FROM "Events" ORDER BY id ASC', (err, results) =>{
         if(err){
             return res.status(500).json({
                 error: err.message
@@ -13,7 +13,7 @@ const getEvents = (req, res) => {
 
 const getEventById = (req, res) => {
     const {id} = req.params;
-    db.query("SELECT * FROM Events WHERE id = $1", [id], (err, results)  => {
+    db.query('SELECT * FROM "Events" WHERE id = $1', [id], (err, results)  => {
         if(err){
             return res.status(500).json({
                 error: err.message
@@ -38,7 +38,7 @@ const createEvent = (req, res) =>{
     }
 
     const sql =
-    "INSERT INTO Events (titulli, pershkrimi, data_fillimit, data_perfundimit, lokacioni, kapaciteti, statusi , organizer_id, category_id, imazhi) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10) RETURNING *";
+    'INSERT INTO "Events" (titulli, pershkrimi, data_fillimit, data_perfundimit, lokacioni, kapaciteti, statusi , organizer_id, category_id, imazhi) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10) RETURNING *';
     const values = [titulli, pershkrimi, data_fillimit, data_perfundimit, lokacioni, kapaciteti, statusi , organizer_id, category_id, imazhi];
 
     db.query(sql, values, (err, result) => {
@@ -66,7 +66,7 @@ const updateEvent = (req, res) =>{
     }
 
     const sql =
-    "UPDATE  Events  SET titulli = $1, pershkrimi = $2, data_fillimit = $3, data_perfundimit = $4, lokacioni = $5, kapaciteti = $6, statusi = $7 , organizer_id = $8, category_id = $9, imazhi = $10 WHERE id = $11"; 
+    'UPDATE "Events" SET titulli = $1, pershkrimi = $2, data_fillimit = $3, data_perfundimit = $4, lokacioni = $5, kapaciteti = $6, statusi = $7 , organizer_id = $8, category_id = $9, imazhi = $10 WHERE id = $11'; 
     const values = [titulli, pershkrimi, data_fillimit, data_perfundimit, lokacioni, kapaciteti, statusi , organizer_id, category_id, imazhi, id];
 
     db.query(sql, values, (err, result) => {
@@ -90,7 +90,7 @@ const updateEvent = (req, res) =>{
 const deleteEvent = (req, res) => {
     const {id} = req.params;
 
-    db.query("DELETE FROM Events WHERE id = $1", [id], (err, result) => {
+    db.query('DELETE FROM "Events" WHERE id = $1', [id], (err, result) => {
         if(err){
             return res.status(500).json({
                 error: err.message

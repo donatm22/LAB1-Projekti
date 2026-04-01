@@ -10,7 +10,7 @@ passport.use(
       passwordField: "password"
     },
     (email, password, done) => {
-      db.query("SELECT * FROM Users WHERE email = $1", [email], (err, result) => {
+      db.query('SELECT * FROM "Users" WHERE email = $1', [email], (err, result) => {
         if (err) {
           return done(err);
         }
@@ -41,7 +41,7 @@ passport.serializeUser((user, done) => {
 });
 
 passport.deserializeUser((id, done) => {
-  db.query("SELECT * FROM Users WHERE id = $1", [id], (err, result) => {
+  db.query('SELECT * FROM "Users" WHERE id = $1', [id], (err, result) => {
     if (err) {
       return done(err);
     }
