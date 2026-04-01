@@ -11,13 +11,13 @@ const {
 
 const router = express.Router();
 
-router.get("/", getUsers);
+router.get("/", verifyToken, allowRoles("admin"), getUsers);
 
-router.get("/:id", getUserById);
+router.get("/:id", verifyToken, getUserById);
 
 router.post("/create", createUser);
 
-router.put("/update/:id", verifyToken, allowRoles("admin"), updateUser);
+router.put("/update/:id", verifyToken, updateUser);
 
 router.delete("/deleteUser/:id", verifyToken, allowRoles("admin"), deleteUser);
 

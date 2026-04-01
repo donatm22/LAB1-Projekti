@@ -1,5 +1,5 @@
 const db = require("../../database/db");
-const { buildPDF } = require("../services/ticketService");
+const { buildPDF, generateTicketQR } = require("../services/ticketService");
 
 
 const getTickets = (req, res) => {
@@ -115,8 +115,6 @@ const deleteTicket = (req, res) => {
 
 
 const getTicketPDF = async (req, res) => {
-
-    // static info per testim deri t'shtojm te dhena ne DB
     const ticket = {
         ticketId: 'TKT-001',
         eventName: 'Sunny Hill Festival - 2026',
@@ -134,11 +132,46 @@ const getTicketPDF = async (req, res) => {
     buildPDF((chunk) => res.write(chunk), () => res.end(), ticket);
 };
 
+const getTicketQRCode = async (req, res) => {
+    const { id } = req.params;
+
+    db.query("SELECT id FROM Tickets WHERE id = $1", [id], async (err, result) => {
+        if (err) {
+            return res.status(500).json({
+                error: err.message
+            });
+        }
+
+        if (result.rows.length === 0) {
+            return res.status(404).json({
+                message: "Bileta nuk u gjet"
+            });
+        }
+
+        try {
+            const ticketId = result.rows[0].id;
+            const qrBuffer = await generateTicketQR(ticketId);
+
+            res.writeHead(200, {
+                "Content-Type": "image/png",
+                "Content-Disposition": `inline; filename="ticket-${ticketId}-qr.png"`
+            });
+
+            return res.end(qrBuffer);
+        } catch (qrError) {
+            return res.status(500).json({
+                error: qrError.message
+            });
+        }
+    });
+};
+
 module.exports = {
     getTickets,
     getTicketByID,
     createTicket,
     updateTicket,
     deleteTicket,
-    getTicketPDF
+    getTicketPDF,
+    getTicketQRCode
 };

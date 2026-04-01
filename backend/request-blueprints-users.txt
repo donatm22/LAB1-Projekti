@@ -113,6 +113,8 @@ Example response:
 {
   "message": "Login successful",
   "token": "jwt-token-here",
+  "tokenType": "Bearer",
+  "expiresIn": "1d",
   "user": {
     "id": 1,
     "emri": "John Doe",
@@ -121,7 +123,45 @@ Example response:
   }
 }
 
+7) Get current session
+Method: GET
+Endpoint: /auth/me
+Headers:
+Authorization: Bearer jwt-token-here
+Body: none
+
+Example request:
+GET /auth/me
+
+Example response:
+{
+  "authenticated": true,
+  "user": {
+    "id": 1,
+    "emri": "John Doe",
+    "email": "john@example.com",
+    "roli": "user"
+  }
+}
+
+8) Logout
+Method: POST
+Endpoint: /auth/logout
+Headers:
+Authorization: Bearer jwt-token-here
+Body: none
+
+Example request:
+POST /auth/logout
+
+Example response:
+{
+  "message": "Logout successful. Remove the bearer token on the client."
+}
+
 Notes:
-- The route file is mounted under `/users` in `server.js`.
+- The `/users` routes are mounted under `/users` in `server.js`.
 - Passwords are stored with bcrypt hashing on register.
 - Login uses Passport local strategy and returns a JWT token.
+- Protected routes require `Authorization: Bearer <token>`.
+- Password hashes are not returned from user endpoints.

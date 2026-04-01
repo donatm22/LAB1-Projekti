@@ -7,7 +7,8 @@ const{
     createTicket,
     updateTicket,
     deleteTicket,
-    getTicketPDF
+    getTicketPDF,
+    getTicketQRCode
 } = require ("../controllers/ticketController");
 
 const router = express.Router();
@@ -22,7 +23,7 @@ router.put("/:id", verifyToken, allowRoles("admin", "organizer"), updateTicket);
 
 router.delete("/:id", verifyToken, allowRoles("admin"), deleteTicket);
 
-// no verifyToken for now, sa per me e testu
 router.get("/:id/pdf", getTicketPDF);
+router.get("/:id/qr", getTicketQRCode);
 
 module.exports = router;
