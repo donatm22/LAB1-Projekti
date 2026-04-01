@@ -43,7 +43,7 @@ const createPayment = (req, res) =>{
         }
         res.status(201).json({
             message:"Pagesa u shtua me sukses!",
-            eventCategories: result.rows[0]
+            payments: result.rows[0]
         });
     });
 };
