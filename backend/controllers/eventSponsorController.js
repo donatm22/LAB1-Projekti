@@ -1,7 +1,7 @@
 const db = require ("../../database/db");
 
 const getEventSponsor = (req, res) =>{
-    db.query("SELECT * FROM EventSponsor ORDER BY id ASC", (err, result) =>{
+    db.query("SELECT * FROM EventSponsors ORDER BY id ASC", (err, result) =>{
         if(err){
             return res.status(500).json({
                 error: err.message
@@ -13,7 +13,7 @@ const getEventSponsor = (req, res) =>{
 
 const getEventSponsorById = (req, res) =>{
     const {id} = req.params;
-    db.query("SELECT * FROM EventSponsor WHERE id = $1", [id], (err, result) =>{
+    db.query("SELECT * FROM EventSponsors WHERE id = $1", [id], (err, result) =>{
         if(err){
             return res.status(500).json({
                 error: err.message
@@ -35,7 +35,7 @@ const createEventSponsor = (req, res) =>{
             message: "Sponsori i eventit nuk eshte krijuar!"
         });
     }
-    db.query("INSERT INTO EventSponsor (event_id, sponsor_id, shuma) VALUES ($1, $2, $3) RETURNING *", [event_id, sponsor_id, shuma], (err, result) =>{
+    db.query("INSERT INTO EventSponsors (event_id, sponsor_id, shuma) VALUES ($1, $2, $3) RETURNING *", [event_id, sponsor_id, shuma], (err, result) =>{
         if(err){
             return res.status(500).json({
                 error: err.message
@@ -43,7 +43,7 @@ const createEventSponsor = (req, res) =>{
         }
         res.status(201).json({
             message:"Sponsori i eventit u shtua me sukses!",
-            eventSponsor: result.rows[0]
+            eventSponsors: result.rows[0]
         });
     });
 };
@@ -56,7 +56,7 @@ const updateEventSponsor = (req, res) =>{
             message: "Input jo valid!"
         });
     }
-    db.query("UPDATE EventSponsor SET event_id = $1, sponsor_id = $2, shuma = $3  WHERE id = $4 RETURNING *", [event_id, sponsor_id, shuma], (err, result) =>{
+    db.query("UPDATE EventSponsors SET event_id = $1, sponsor_id = $2, shuma = $3  WHERE id = $4 RETURNING *", [event_id, sponsor_id, shuma], (err, result) =>{
         if(err){
             return res.status(500).json({
                 error: err.message
@@ -76,7 +76,7 @@ const updateEventSponsor = (req, res) =>{
 const deleteEventSponsor = (req, res) =>{
     const {id} = req.params;
     
-    db.query("DELETE FROM EventSponsor WHERE id = $1", [id], (err, result) =>{
+    db.query("DELETE FROM EventSponsors WHERE id = $1", [id], (err, result) =>{
         if(err){
             return res.status(500).json({
                 error: err.message
