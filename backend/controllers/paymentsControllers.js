@@ -42,7 +42,7 @@ const createPayment = (req, res) =>{
             });
         }
         res.status(201).json({
-            message:"Kategoria e Eventit u shtua me sukses!",
+            message:"Pagesa u shtua me sukses!",
             eventCategories: result.rows[0]
         });
     });
@@ -64,11 +64,11 @@ const updatePayment = (req, res) =>{
         }
         if(result.rowCount === 0){
             return res.status(404).json({
-                message: "Nuk u shtua Kategoria e perditesuar!"
+                message: "Nuk u shtua Pagesa e perditesuar!"
             });
         }
         res.status(200).json({
-            message:"Kategoria u perditesua me sukses",
+            message:"Pagesa u perditesua me sukses",
         });
     });
 };
