@@ -8,7 +8,7 @@ const {
     createFeedback,
     updateFeedback,
     deleteFeedback
-} = require("../controllers/feedbackController");
+} = require("../controllers/feedbackControllers");
 
 const router = express.Router();
 

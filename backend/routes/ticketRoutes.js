@@ -23,7 +23,4 @@ router.put("/:id", verifyToken, allowRoles("admin", "organizer"), updateTicket);
 
 router.delete("/:id", verifyToken, allowRoles("admin"), deleteTicket);
 
-router.get("/:id/pdf", getTicketPDF);
-router.get("/:id/qr", getTicketQRCode);
-
 module.exports = router;

@@ -113,65 +113,10 @@ const deleteTicket = (req, res) => {
     });
 };
 
-
-const getTicketPDF = async (req, res) => {
-    const ticket = {
-        ticketId: 'TKT-001',
-        eventName: 'Sunny Hill Festival - 2026',
-        eventDate: '21 June 2026',
-        eventTime: '14:00 – 05:00 (next morning)',
-        venue: 'Berrnice',
-        attendeeName: 'Filan Fisteku'
-    };
-
-    res.writeHead(200, {
-        'Content-Type': 'application/pdf',
-        'Content-Disposition': `attachment; filename="ticket-${ticket.ticketId}.pdf"`
-    });
-
-    buildPDF((chunk) => res.write(chunk), () => res.end(), ticket);
-};
-
-const getTicketQRCode = async (req, res) => {
-    const { id } = req.params;
-
-    db.query("SELECT id FROM Tickets WHERE id = $1", [id], async (err, result) => {
-        if (err) {
-            return res.status(500).json({
-                error: err.message
-            });
-        }
-
-        if (result.rows.length === 0) {
-            return res.status(404).json({
-                message: "Bileta nuk u gjet"
-            });
-        }
-
-        try {
-            const ticketId = result.rows[0].id;
-            const qrBuffer = await generateTicketQR(ticketId);
-
-            res.writeHead(200, {
-                "Content-Type": "image/png",
-                "Content-Disposition": `inline; filename="ticket-${ticketId}-qr.png"`
-            });
-
-            return res.end(qrBuffer);
-        } catch (qrError) {
-            return res.status(500).json({
-                error: qrError.message
-            });
-        }
-    });
-};
-
 module.exports = {
     getTickets,
     getTicketByID,
     createTicket,
     updateTicket,
-    deleteTicket,
-    getTicketPDF,
-    getTicketQRCode
+    deleteTicket
 };
