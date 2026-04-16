@@ -1,5 +1,7 @@
 import { useState} from "react";
 import "./Login.css"
+import { apiUrl } from "../config/api";
+
 function Login(){
     const [formData, setFormData] = useState({
         email: "",
@@ -16,7 +18,7 @@ function Login(){
         e.preventDefault();
 
         try{
-            const response = await fetch("http.//localhost:5000/auth/login", {
+            const response = await fetch(apiUrl("/auth/login"), {
                 method: "POST",
                 headers: {
                     "Content-Type": "application/json",

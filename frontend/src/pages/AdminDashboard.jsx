@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import Navbar from "../components/Navbar";
 import "./AdminDashboard.css";
+import { apiUrl } from "../config/api";
 
 function AdminDashboard() {
   const [stats, setStats] = useState({
@@ -20,10 +21,10 @@ function AdminDashboard() {
 
       try {
         const [usersRes, eventsRes, speakersRes, ticketsRes] = await Promise.all([
-          fetch("http://localhost:5000/users", { headers: authHeaders }),
-          fetch("http://localhost:5000/event"),
-          fetch("http://localhost:5000/speaker"),
-          fetch("http://localhost:5000/ticket"),
+          fetch(apiUrl("/users"), { headers: authHeaders }),
+          fetch(apiUrl("/event")),
+          fetch(apiUrl("/speaker")),
+          fetch(apiUrl("/ticket")),
         ]);
 
         const [usersData, eventsData, speakersData, ticketsData] = await Promise.all([
