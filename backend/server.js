@@ -10,12 +10,17 @@ const eventCategoriesRoutes = require("./routes/eventCategoriesRoutes");
 const eventRoutes = require("./routes/eventRoutes");
 const eventSpeakersRoutes = require("./routes/eventSpeakersRoutes");
 const eventSponsorRoutes = require("./routes/eventSponsorRoutes");
+const attendanceRoutes = require("./routes/attendanceRoutes");
+const eventSchedulesRoutes = require("./routes/eventSchedulesRoutes");
+const organizerRoutes = require("./routes/organizerRoutes");
 const speakerRoutes = require("./routes/speakerRoutes");
 const ticketRoutes = require("./routes/ticketRoutes");
+const ticketTypesRoutes = require("./routes/ticketTypesRoutes");
 const sponsorRoutes = require("./routes/sponsorRoutes");
 const feedbackRoutes = require("./routes/feedbackRoutes");
 const paymentRoutes = require("./routes/paymentsRoutes");
 const registrationRoutes = require("./routes/registrationRoutes")
+const venueRoutes = require("./routes/venueRoutes");
 
 require("./config/passport");
 
@@ -57,11 +62,16 @@ app.use("/speaker", speakerRoutes);
 app.use("/event", eventRoutes);
 app.use("/eventSpeakers", eventSpeakersRoutes);
 app.use("/eventSponsor", eventSponsorRoutes);
+app.use("/attendance", attendanceRoutes);
+app.use("/eventSchedules", eventSchedulesRoutes);
+app.use("/organizers", organizerRoutes);
 app.use("/ticket", ticketRoutes);
+app.use("/ticketTypes", ticketTypesRoutes);
 app.use("/sponsor", sponsorRoutes);
 app.use("/feedback", feedbackRoutes);
 app.use("/payment", paymentRoutes);
 app.use("/registrations", registrationRoutes);
+app.use("/venues", venueRoutes);
 
 app.use((err, req, res, next) => {
   console.error(err.stack);
