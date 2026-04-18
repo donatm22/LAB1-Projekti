@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import Navbar from "../components/Navbar";
 import "./AdminDashboard.css";
-import { apiUrl } from "../config/api";
+import { dashboardApi } from "../services/api";
 
 function AdminDashboard() {
   const [stats, setStats] = useState({
@@ -14,34 +14,11 @@ function AdminDashboard() {
 
   useEffect(() => {
     const fetchStats = async () => {
-      const token = localStorage.getItem("token");
-      const authHeaders = token
-        ? { Authorization: `Bearer ${token}` }
-        : {};
-
       try {
-        const [usersRes, eventsRes, speakersRes, ticketsRes] = await Promise.all([
-          fetch(apiUrl("/users"), { headers: authHeaders }),
-          fetch(apiUrl("/event")),
-          fetch(apiUrl("/speaker")),
-          fetch(apiUrl("/ticket")),
-        ]);
-
-        const [usersData, eventsData, speakersData, ticketsData] = await Promise.all([
-          usersRes.json(),
-          eventsRes.json(),
-          speakersRes.json(),
-          ticketsRes.json(),
-        ]);
-
-        setStats({
-          users: Array.isArray(usersData) ? usersData.length : 0,
-          events: Array.isArray(eventsData) ? eventsData.length : 0,
-          speakers: Array.isArray(speakersData) ? speakersData.length : 0,
-          tickets: Array.isArray(ticketsData) ? ticketsData.length : 0,
-        });
+        const statsData = await dashboardApi.getStats();
+        setStats(statsData);
       } catch (error) {
-        console.error("Gabim gjatë marrjes së statistikave:", error);
+        console.error("Gabim gjate marrjes se statistikave:", error);
       } finally {
         setLoading(false);
       }

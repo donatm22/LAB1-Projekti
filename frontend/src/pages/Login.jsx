@@ -1,6 +1,6 @@
 import { useState} from "react";
 import "./Login.css"
-import { apiUrl } from "../config/api";
+import { authApi, tokenStorage } from "../services/api";
 
 function Login(){
     const [formData, setFormData] = useState({
@@ -18,26 +18,15 @@ function Login(){
         e.preventDefault();
 
         try{
-            const response = await fetch(apiUrl("/auth/login"), {
-                method: "POST",
-                headers: {
-                    "Content-Type": "application/json",
-                },
-                body: JSON.stringify(formData),
-            });
-            const data = await response.json();
+            const data = await authApi.login(formData);
             console.log(data);
 
-            if(response.ok){
-                localStorage.setItem("token", data.token);
-                localStorage.setItem("user", JSON.stringify(data.user));
-                alert("Login u krye me sukses!");
-            }else{
-                alert(data.message || "Login deshtoi");
-            }
+            tokenStorage.setToken(data.token);
+            tokenStorage.setUser(data.user);
+            alert("Login u krye me sukses!");
         }catch(error){
             console.error("Error gjat Login:", error);
-            alert("Server error");
+            alert(error.message || "Server error");
         }
     };
     return (
