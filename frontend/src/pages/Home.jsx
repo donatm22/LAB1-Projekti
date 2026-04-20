@@ -1,172 +1,184 @@
+import React, { useState, useRef } from "react";
 import "./Home.css";
+import Navbar from "../components/Navbar";
+import EventCard from "../components/EventCard";
+import { SOUGHT_AFTER_EVENTS } from "../../data/eventsData";
 
-const curatedCards = [
+const FILTER_CHIPS = [
+  "Educational Talks",
+  "Concerts",
+  "Workshops",
+  "Exhibitions",
+  "Socials",
+];
+
+const PILLARS = [
   {
-    title: "The Vanguard Sessions",
-    subtitle: "Live performances with intimate stage design.",
-    className: "curation-card curation-stage",
+    number: "I",
+    heading: "Discourse over spectacle.",
+    body: "We live in an age that rewards volume. AURA was built as a deliberate correction — a space where the quality of an argument outlasts the noise that surrounds it. Every event is selected not for its headline value, but for the depth of conversation it is capable of producing.",
   },
   {
-    title: "Golden Supper Clubs",
-    subtitle: "Private dining and premium networking tables.",
-    className: "curation-card curation-dining",
+    number: "II",
+    heading: "The right room matters.",
+    body: "Ideas do not develop in isolation. They sharpen against other ideas, held by people who have taken the time to care about them. Our gatherings are kept intimate by design — not as an affectation of exclusivity, but because understanding requires proximity.",
   },
   {
-    title: "Archive Halls",
-    subtitle: "Spaces made for panels, launches, and screenings.",
-    className: "curation-card curation-archive",
+    number: "III",
+    heading: "Rigour is not a barrier.",
+    body: "We do not believe complexity should be a gatekeeping device. Our speakers are chosen for their ability to make difficult things legible without making them simple. Philosophy, mathematics, history — brought back to the human questions that gave rise to them.",
   },
   {
-    title: "Planning Notes",
-    subtitle: "Editorial calendars and curated event briefs.",
-    className: "curation-card curation-note",
+    number: "IV",
+    heading: "Something worth keeping.",
+    body: "Most evenings dissolve by morning. We design ours to linger — in the form of a reference you return to, a position you have since revised, or a question you are still turning over weeks later. That residue is the point.",
   },
 ];
 
-const planningPoints = [
-  "Meaningful registration tracking",
-  "Organized speaker and sponsor management",
-  "Fast event publishing for your team",
-];
+function Home() {
+  const [activeFilter, setActiveFilter] = useState("Educational Talks");
+  const sliderRef = useRef(null);
 
-export default function Home() {
+  const filteredEvents = SOUGHT_AFTER_EVENTS.filter(
+    (event) => event.category === activeFilter
+  );
+
+  const scroll = (direction) => {
+    if (!sliderRef.current) return;
+    const amount = 420;
+    sliderRef.current.scrollBy({
+      left: direction === "next" ? amount : -amount,
+      behavior: "smooth",
+    });
+  };
+
   return (
-    <div className="landing-shell">
-      <div className="landing-page">
-        <header className="landing-header">
-          <div className="brand-block">
-            <span className="brand-mini">Evently</span>
-          </div>
+    <div className="home-wrapper">
+      <Navbar />
 
-          <nav className="landing-nav">
-            <a href="/">Home</a>
-            <a href="/login">Login</a>
-            <a href="/admin">Dashboard</a>
-          </nav>
+      <main className="home-page">
 
-          <div className="header-actions">
-            <button className="ghost-button">Collections</button>
-            <button className="primary-button">Get Started</button>
-          </div>
-        </header>
+        {/* ── Hero ── */}
+        <section className="hero">
+          <div className="hero-top">
+            <div className="hero-left">
+              <span className="hero-eyebrow">The Art of the Argument</span>
+              <h1 className="hero-headline">
+                Insights that leave a
+                <em> lasting</em> resonance.
+              </h1>
+            </div>
 
-        <section className="hero-section">
-          <div className="hero-copy">
-            <p className="section-kicker">Curated event management</p>
-            <h1>
-              Unforgettable <span>Experiences.</span>
-            </h1>
-            <p className="hero-description">
-              Plan conferences, speaker sessions, ticketing, and premium
-              gatherings inside one elegant platform made for memorable events.
-            </p>
-
-            <div className="hero-actions">
-              <button className="primary-button">Book a Demo</button>
-              <button className="text-button">Browse Collections</button>
+            <div className="hero-right">
+              <p className="hero-description">
+                Beyond the noise of the modern day lies the quiet power of a shared idea.
+                Join us for a series of intimate engagements designed to challenge,
+                refine, and inspire.
+              </p>
             </div>
           </div>
 
-          <div className="hero-side-note">
-            <p>
-              Editorial tools for teams who want each event to feel deliberate,
-              polished, and easy to manage from first announcement to final
-              registration.
-            </p>
-          </div>
-        </section>
+          <p className="hero-section-label">Our most sought-after events</p>
 
-        <section className="hero-visual">
-          <div className="arch-gallery">
-            <div className="arch-column">
-              <div className="arch-window arch-tall">
-                <span className="arch-glow" />
-              </div>
-            </div>
+          {/* ── Filter bar + arrows ── */}
+          <div className="hero-filters-row">
+            <div className="hero-filters">
+              <button className="filter-icon-btn">
+                <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
+                  <path d="M1 3h12M3 7h8M5 11h4" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" />
+                </svg>
+                Refine
+              </button>
 
-            <div className="arch-column">
-              <div className="arch-window arch-tall arch-center">
-                <span className="arch-glow" />
-              </div>
-            </div>
+              <div className="filter-divider" />
 
-            <div className="arch-column">
-              <div className="arch-window arch-tall">
-                <span className="arch-glow" />
-              </div>
-            </div>
-          </div>
-
-          <div className="floating-note">
-            <p className="floating-title">The Nightfall Editorial Suite</p>
-            <p>Built for modern events, speakers, registrations, and tickets.</p>
-          </div>
-        </section>
-
-        <section className="curation-section">
-          <div className="section-heading">
-            <p className="section-kicker">Curated collections</p>
-            <h2>Design every experience with intention.</h2>
-          </div>
-
-          <div className="curation-grid">
-            {curatedCards.map((card) => (
-              <article key={card.title} className={card.className}>
-                <div className="card-surface">
-                  <div>
-                    <h3>{card.title}</h3>
-                    <p>{card.subtitle}</p>
-                  </div>
-                </div>
-              </article>
-            ))}
-          </div>
-        </section>
-
-        <section className="editorial-section">
-          <div className="editorial-visual">
-            <div className="book-cover">
-              <span>EVENT</span>
-              <span>PLANNING</span>
-              <span>ISSUE</span>
-            </div>
-          </div>
-
-          <div className="editorial-copy">
-            <p className="section-kicker">Platform focus</p>
-            <h2>
-              An editorial <span>standard</span> for planners.
-            </h2>
-            <p>
-              Bring structure to your events with one dashboard for users,
-              speakers, categories, sponsors, payments, and registrations.
-            </p>
-
-            <ul className="planning-list">
-              {planningPoints.map((point) => (
-                <li key={point}>{point}</li>
+              {FILTER_CHIPS.map((chip) => (
+                <button
+                  key={chip}
+                  className={`filter-chip${activeFilter === chip ? " active" : ""}`}
+                  onClick={() => setActiveFilter(chip)}
+                >
+                  {chip}
+                </button>
               ))}
-            </ul>
+            </div>
+
+            <div className="slider-arrows">
+              <button
+                className="slider-arrow"
+                onClick={() => scroll("prev")}
+                aria-label="Previous events"
+              >
+                <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
+                  <path d="M10 12L6 8l4-4" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" />
+                </svg>
+              </button>
+              <button
+                className="slider-arrow"
+                onClick={() => scroll("next")}
+                aria-label="Next events"
+              >
+                <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
+                  <path d="M6 4l4 4-4 4" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" />
+                </svg>
+              </button>
+            </div>
+          </div>
+
+          {/* ── Slider ── */}
+          <div className="hero-slider" ref={sliderRef}>
+            {filteredEvents.length > 0 ? (
+              filteredEvents.map((event) => (
+                <div className="hero-slide" key={event.id}>
+                  <EventCard {...event} />
+                </div>
+              ))
+            ) : (
+              <p className="hero-empty">No events found in this category yet.</p>
+            )}
           </div>
         </section>
 
-        <section className="newsletter-panel">
-          <p className="newsletter-kicker">Join the editorial planner list</p>
-          <h2>Get event ideas and platform updates.</h2>
+        {/* ── Why AURA ── */}
+        <section className="why-aura">
+          <div className="why-aura-inner">
 
-          <div className="newsletter-form">
-            <input type="email" placeholder="Enter your email" />
-            <button className="dark-button">Subscribe</button>
+            <div className="why-aura-left">
+              <span className="hero-eyebrow">Why AURA</span>
+              <h2 className="why-heading">
+                A case for slowing down.
+              </h2>
+              <p className="why-aside">
+                In a culture of endless content, we make one small argument: that an evening
+                spent in genuine intellectual company is among the most worthwhile things
+                a person can do with their time.
+              </p>
+              <div className="why-rule" aria-hidden="true" />
+              <p className="why-footnote">
+                Est. in the belief that the examined life is still worth living.
+              </p>
+            </div>
+
+            <div className="why-aura-right">
+              {PILLARS.map((pillar) => (
+                <article className="why-pillar" key={pillar.number}>
+                  <span className="why-pillar-number" aria-hidden="true">
+                    {pillar.number}
+                  </span>
+                  <div className="why-pillar-body">
+                    <h3 className="why-pillar-heading">{pillar.heading}</h3>
+                    <p className="why-pillar-text">{pillar.body}</p>
+                  </div>
+                </article>
+              ))}
+            </div>
+
           </div>
         </section>
 
-        <footer className="landing-footer">
-          <span>About</span>
-          <span>Events</span>
-          <span>Speakers</span>
-          <span>Contact</span>
-        </footer>
-      </div>
+      </main>
     </div>
   );
 }
+
+export default Home;

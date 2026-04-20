@@ -1,6 +1,4 @@
 const db = require("../../database/db");
-const { buildPDF, generateTicketQR } = require("../services/ticketService");
-
 
 const getTickets = (req, res) => {
     db.query('SELECT * FROM "Tickets" ORDER BY id ASC', (err, result) => {
