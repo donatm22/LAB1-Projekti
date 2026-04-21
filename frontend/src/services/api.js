@@ -243,13 +243,44 @@ export const eventCategoriesApi = {
   },
 };
 
+export const organizersApi = {
+  getAll() {
+    return request("/organizers");
+  },
+  getById(id) {
+    return request(`/organizers/${id}`);
+  },
+  create(organizerData, token = tokenStorage.getToken()) {
+    return request("/organizers", {
+      method: "POST",
+      body: organizerData,
+      token,
+    });
+  },
+  update(id, organizerData, token = tokenStorage.getToken()) {
+    return request(`/organizers/${id}`, {
+      method: "PUT",
+      body: organizerData,
+      token,
+    });
+  },
+  delete(id, token = tokenStorage.getToken()) {
+    return request(`/organizers/${id}`, {
+      method: "DELETE",
+      token,
+    });
+  },
+};
+
 export const dashboardApi = {
   async getStats(token = tokenStorage.getToken()) {
-    const [users, events, speakers, tickets] = await Promise.all([
+    const [users, events, speakers, tickets, categories, organizers] = await Promise.all([
       usersApi.getAll(token),
       eventsApi.getAll(),
       speakersApi.getAll(),
       ticketsApi.getAll(),
+      eventCategoriesApi.getAll(),
+      organizersApi.getAll(),
     ]);
 
     return {
@@ -257,6 +288,8 @@ export const dashboardApi = {
       events: Array.isArray(events) ? events.length : 0,
       speakers: Array.isArray(speakers) ? speakers.length : 0,
       tickets: Array.isArray(tickets) ? tickets.length : 0,
+      categories: Array.isArray(categories) ? categories.length : 0,
+      organizers: Array.isArray(organizers) ? organizers.length : 0,
     };
   },
 };
