@@ -1,0 +1,31 @@
+:root {
+  --navbar-height: 80px;
+
+  --color-bg:           #ffffff;
+  --color-bg-warm:      #faf7f4;
+  --color-bg-dark:      #1a0f0a;
+
+  --color-ink:          #1a0f0a;
+  --color-ink-mid:      #4a3728;
+  --color-ink-muted:    #7a6255;
+  --color-ink-faint:    #b09a88;
+
+  --color-accent:       #9a5c1a;
+  --color-accent-light: #c8843a;
+
+  --color-border:       rgba(26, 15, 10, 0.1);
+  --color-border-mid:   rgba(26, 15, 10, 0.18);
+
+  --color-white-10:     rgba(255, 248, 239, 0.1);
+  --color-white-30:     rgba(255, 248, 239, 0.3);
+  --color-white-50:     rgba(255, 248, 239, 0.5);
+  --color-white-65:     rgba(255, 248, 239, 0.65);
+  --color-white-full:   #fff8ef;
+
+  --radius-sm:  4px;
+  --radius-md:  6px;
+  --radius-pill: 2px;
+
+  --transition: all 0.2s ease;
+  --transition-slow: all 0.5s cubic-bezier(0.16, 1, 0.3, 1);
+}

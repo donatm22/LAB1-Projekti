@@ -15,28 +15,42 @@ const FILTER_CHIPS = [
 const PILLARS = [
   {
     number: "I",
-    heading: "Discourse over spectacle.",
-    body: "We live in an age that rewards volume. AURA was built as a deliberate correction — a space where the quality of an argument outlasts the noise that surrounds it. Every event is selected not for its headline value, but for the depth of conversation it is capable of producing.",
+    heading: "Quality over quantity.",
+    body: "We don't list everything. We list the things worth attending — concerts with soul, workshops with substance, exhibitions with a point of view. If it's on AURA, someone on our team has vouched for it personally.",
   },
   {
     number: "II",
     heading: "The right room matters.",
-    body: "Ideas do not develop in isolation. They sharpen against other ideas, held by people who have taken the time to care about them. Our gatherings are kept intimate by design — not as an affectation of exclusivity, but because understanding requires proximity.",
+    body: "A great concert in the wrong venue is a lesser experience. A workshop with the wrong crowd teaches you nothing. We think carefully about context — not just what the event is, but where it happens and who else will be there.",
   },
   {
     number: "III",
-    heading: "Rigour is not a barrier.",
-    body: "We do not believe complexity should be a gatekeeping device. Our speakers are chosen for their ability to make difficult things legible without making them simple. Philosophy, mathematics, history — brought back to the human questions that gave rise to them.",
+    heading: "Every kind of evening.",
+    body: "Culture doesn't live in one room. It's in a jazz basement on a Tuesday, a philosophy lecture on a Sunday afternoon, a ceramics workshop you almost didn't book. AURA exists across all of it.",
   },
   {
     number: "IV",
     heading: "Something worth keeping.",
-    body: "Most evenings dissolve by morning. We design ours to linger — in the form of a reference you return to, a position you have since revised, or a question you are still turning over weeks later. That residue is the point.",
+    body: "Most nights dissolve by morning. We design for the ones that don't — the performance you still think about, the idea from a talk you've since come back to, the skill from a workshop you still use. That residue is the point.",
   },
 ];
 
+const STATS = [
+  { value: "340+", label: "Events hosted" },
+  { value: "650K+", label: "Attendees" },
+  { value: "80+", label: "Speakers & artists" },
+  { value: "20", label: "Countries" },
+];
+
+const FOOTER_LINKS = {
+  Discover: ["All Events", "Concerts", "Workshops", "Exhibitions", "Educational Talks", "Socials"],
+  Company: ["About AURA", "Our Team", "Partnerships", "Press & Media", "Careers"],
+  Support: ["Help Centre", "Contact Us", "Refund Policy", "Accessibility", "Terms of Use"],
+};
+
 function Home() {
   const [activeFilter, setActiveFilter] = useState("Educational Talks");
+  const [selectedChips, setSelectedChips] = useState([]);
   const sliderRef = useRef(null);
 
   const filteredEvents = SOUGHT_AFTER_EVENTS.filter(
@@ -45,11 +59,16 @@ function Home() {
 
   const scroll = (direction) => {
     if (!sliderRef.current) return;
-    const amount = 420;
     sliderRef.current.scrollBy({
-      left: direction === "next" ? amount : -amount,
+      left: direction === "next" ? 540 : -540,
       behavior: "smooth",
     });
+  };
+
+  const toggleChip = (chip) => {
+    setSelectedChips((prev) =>
+      prev.includes(chip) ? prev.filter((c) => c !== chip) : [...prev, chip]
+    );
   };
 
   return (
@@ -58,29 +77,44 @@ function Home() {
 
       <main className="home-page">
 
-        {/* ── Hero ── */}
         <section className="hero">
           <div className="hero-top">
             <div className="hero-left">
-              <span className="hero-eyebrow">The Art of the Argument</span>
+              <span className="hero-eyebrow">Curated Experiences</span>
               <h1 className="hero-headline">
-                Insights that leave a
-                <em> lasting</em> resonance.
+                Events that leave a
+                <em> lasting </em>impression.
               </h1>
             </div>
-
             <div className="hero-right">
               <p className="hero-description">
-                Beyond the noise of the modern day lies the quiet power of a shared idea.
-                Join us for a series of intimate engagements designed to challenge,
-                refine, and inspire.
+                Beyond the ordinary night out lies something worth remembering.
+                AURA brings together the best of culture, music, ideas, and craft —
+                intimate gatherings designed to move you.
               </p>
+              <div className="hero-cta-row">
+                <a href="#events" className="hero-btn-primary">Get Started</a>
+                <a href="#archive" className="hero-btn-ghost">
+                  Explore Archive
+                  <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
+                    <path d="M2 7h10M8 3l4 4-4 4" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round"/>
+                  </svg>
+                </a>
+              </div>
             </div>
+          </div>
+
+          <div className="hero-stats">
+            {STATS.map((stat) => (
+              <div className="hero-stat" key={stat.label}>
+                <span className="hero-stat-value">{stat.value}</span>
+                <span className="hero-stat-label">{stat.label}</span>
+              </div>
+            ))}
           </div>
 
           <p className="hero-section-label">Our most sought-after events</p>
 
-          {/* ── Filter bar + arrows ── */}
           <div className="hero-filters-row">
             <div className="hero-filters">
               <button className="filter-icon-btn">
@@ -89,9 +123,7 @@ function Home() {
                 </svg>
                 Refine
               </button>
-
               <div className="filter-divider" />
-
               {FILTER_CHIPS.map((chip) => (
                 <button
                   key={chip}
@@ -102,22 +134,13 @@ function Home() {
                 </button>
               ))}
             </div>
-
             <div className="slider-arrows">
-              <button
-                className="slider-arrow"
-                onClick={() => scroll("prev")}
-                aria-label="Previous events"
-              >
+              <button className="slider-arrow" onClick={() => scroll("prev")} aria-label="Previous events">
                 <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
                   <path d="M10 12L6 8l4-4" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" />
                 </svg>
               </button>
-              <button
-                className="slider-arrow"
-                onClick={() => scroll("next")}
-                aria-label="Next events"
-              >
+              <button className="slider-arrow" onClick={() => scroll("next")} aria-label="Next events">
                 <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
                   <path d="M6 4l4 4-4 4" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" />
                 </svg>
@@ -125,7 +148,6 @@ function Home() {
             </div>
           </div>
 
-          {/* ── Slider ── */}
           <div className="hero-slider" ref={sliderRef}>
             {filteredEvents.length > 0 ? (
               filteredEvents.map((event) => (
@@ -139,32 +161,24 @@ function Home() {
           </div>
         </section>
 
-        {/* ── Why AURA ── */}
         <section className="why-aura">
           <div className="why-aura-inner">
-
             <div className="why-aura-left">
               <span className="hero-eyebrow">Why AURA</span>
-              <h2 className="why-heading">
-                A case for slowing down.
-              </h2>
+              <h2 className="why-heading">A case for living well.</h2>
               <p className="why-aside">
-                In a culture of endless content, we make one small argument: that an evening
-                spent in genuine intellectual company is among the most worthwhile things
-                a person can do with their time.
+                In a culture of endless options, we do the curation for you.
+                Every event on AURA is selected for one reason: it's worth your evening.
               </p>
               <div className="why-rule" aria-hidden="true" />
               <p className="why-footnote">
-                Est. in the belief that the examined life is still worth living.
+                Est. in the belief that how you spend your time defines who you become.
               </p>
             </div>
-
             <div className="why-aura-right">
               {PILLARS.map((pillar) => (
                 <article className="why-pillar" key={pillar.number}>
-                  <span className="why-pillar-number" aria-hidden="true">
-                    {pillar.number}
-                  </span>
+                  <span className="why-pillar-number" aria-hidden="true">{pillar.number}</span>
                   <div className="why-pillar-body">
                     <h3 className="why-pillar-heading">{pillar.heading}</h3>
                     <p className="why-pillar-text">{pillar.body}</p>
@@ -172,9 +186,131 @@ function Home() {
                 </article>
               ))}
             </div>
-
           </div>
         </section>
+
+        <section className="subscribe">
+          <div className="subscribe-inner">
+            <div className="subscribe-left">
+              <span className="hero-eyebrow">Stay in the loop</span>
+              <h2 className="subscribe-heading">
+                Join the list.<br />
+                Miss <em>nothing</em>.
+              </h2>
+              <p className="subscribe-body">
+                We surface events we think you'd actually want to attend —
+                no noise, no filler. Just a quiet note in your inbox when
+                something worth your evening lands on AURA.
+              </p>
+              <div className="subscribe-trust">
+                <span className="subscribe-trust-item">
+                  <svg width="13" height="13" viewBox="0 0 13 13" fill="none">
+                    <path d="M2 6.5L5.5 10 11 3" stroke="var(--color-accent)" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round"/>
+                  </svg>
+                  No spam, ever
+                </span>
+                <span className="subscribe-trust-item">
+                  <svg width="13" height="13" viewBox="0 0 13 13" fill="none">
+                    <path d="M2 6.5L5.5 10 11 3" stroke="var(--color-accent)" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round"/>
+                  </svg>
+                  Unsubscribe anytime
+                </span>
+                <span className="subscribe-trust-item">
+                  <svg width="13" height="13" viewBox="0 0 13 13" fill="none">
+                    <path d="M2 6.5L5.5 10 11 3" stroke="var(--color-accent)" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round"/>
+                  </svg>
+                  Joined by 12,000+ members
+                </span>
+              </div>
+            </div>
+            <div className="subscribe-right">
+              <form className="subscribe-form" onSubmit={(e) => e.preventDefault()}>
+                <div className="subscribe-field">
+                  <label htmlFor="subscribe-name" className="subscribe-label">Your name</label>
+                  <input id="subscribe-name" type="text" placeholder="Jane Smith" className="subscribe-input" />
+                </div>
+                <div className="subscribe-field">
+                  <label htmlFor="subscribe-email" className="subscribe-label">Email address</label>
+                  <input id="subscribe-email" type="email" placeholder="jane@example.com" className="subscribe-input" />
+                </div>
+                <div className="subscribe-categories">
+                  <span className="subscribe-label">I'm interested in</span>
+                  <div className="subscribe-chips">
+                    {FILTER_CHIPS.map((chip) => (
+                      <button
+                        type="button"
+                        key={chip}
+                        className={`subscribe-chip${selectedChips.includes(chip) ? " selected" : ""}`}
+                        onClick={() => toggleChip(chip)}
+                      >
+                        {chip}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+                <button type="submit" className="subscribe-btn">
+                  Notify me
+                  <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
+                    <path d="M2 7h10M8 3l4 4-4 4" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round"/>
+                  </svg>
+                </button>
+              </form>
+            </div>
+          </div>
+        </section>
+
+        <footer className="footer">
+          <div className="footer-inner">
+            <div className="footer-brand">
+              <span className="footer-logo">AURA</span>
+              <p className="footer-tagline">
+                The considered guide to evenings worth having.
+              </p>
+              <div className="footer-socials">
+                <a href="#" className="footer-social" aria-label="Instagram">
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none">
+                    <rect x="2" y="2" width="20" height="20" rx="5" stroke="currentColor" strokeWidth="1.8"/>
+                    <circle cx="12" cy="12" r="4" stroke="currentColor" strokeWidth="1.8"/>
+                    <circle cx="17.5" cy="6.5" r="1" fill="currentColor"/>
+                  </svg>
+                </a>
+                <a href="#" className="footer-social" aria-label="X / Twitter">
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none">
+                    <path d="M4 4l16 16M4 20L20 4" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round"/>
+                  </svg>
+                </a>
+                <a href="#" className="footer-social" aria-label="LinkedIn">
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none">
+                    <rect x="2" y="2" width="20" height="20" rx="4" stroke="currentColor" strokeWidth="1.8"/>
+                    <path d="M7 10v7M7 7v.5M12 17v-4c0-1.5 1-2 2-2s2 .5 2 2v4M12 10v7" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round"/>
+                  </svg>
+                </a>
+              </div>
+            </div>
+            <div className="footer-links">
+              {Object.entries(FOOTER_LINKS).map(([group, links]) => (
+                <div className="footer-col" key={group}>
+                  <span className="footer-col-heading">{group}</span>
+                  <ul className="footer-col-list">
+                    {links.map((link) => (
+                      <li key={link}>
+                        <a href="#" className="footer-link">{link}</a>
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+              ))}
+            </div>
+          </div>
+          <div className="footer-bottom">
+            <span className="footer-copy">© 2026 AURA Events Ltd. All rights reserved.</span>
+            <div className="footer-bottom-links">
+              <a href="#" className="footer-bottom-link">Privacy Policy</a>
+              <a href="#" className="footer-bottom-link">Cookie Policy</a>
+              <a href="#" className="footer-bottom-link">Terms of Service</a>
+            </div>
+          </div>
+        </footer>
 
       </main>
     </div>

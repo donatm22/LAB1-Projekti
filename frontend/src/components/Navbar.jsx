@@ -3,11 +3,10 @@ import { Link, NavLink, useLocation } from "react-router-dom";
 import "./Navbar.css";
 
 const navItems = [
-  { label: "Home", to: "/" },
-  { label: "About", href: "#about" },
-  { label: "All Events", href: "#events" },
-  { label: "Our Speakers", href: "#events" },
-  { label: "Contact", href: "#contact" },
+  { label: "Discover", to: "/" },
+  { label: "Concerts", href: "#concerts" },
+  { label: "Exhibitions", href: "#exhibitions" },
+  { label: "Socials", href: "#socials" },
 ];
 
 function Navbar() {
@@ -60,9 +59,7 @@ function Navbar() {
 
         <div className="navbar-actions">
           <label className="navbar-search" htmlFor="event-search">
-            <span className="navbar-search-icon" aria-hidden="true">
-              &#128269;
-            </span>
+            <span className="navbar-search-icon" aria-hidden="true">&#128269;</span>
             <input
               id="event-search"
               type="search"
@@ -72,17 +69,17 @@ function Navbar() {
             />
           </label>
 
+          <Link className="navbar-cta" to="/create">
+            Create Event
+          </Link>
+
           <Link className="navbar-profile" to="/login" aria-label="Open profile">
-             <svg
-                viewBox="0 0 185.20833 185.20834"
-                xmlns="http://www.w3.org/2000/svg"
-                className="icon"
-              >
-                <g fill="currentColor">
-                  <circle cx="92.604" cy="49.077" r="45.192" />
-                  <path d="M 92.604,102.428 A 78.983215,78.983215 0 0 0 13.6207,181.323 H 171.5873 A 78.983215,78.983215 0 0 0 92.604,102.428 Z" />
-                </g>
-              </svg>
+            <svg viewBox="0 0 185.20833 185.20834" xmlns="http://www.w3.org/2000/svg">
+              <g fill="currentColor">
+                <circle cx="92.604" cy="49.077" r="45.192" />
+                <path d="M 92.604,102.428 A 78.983215,78.983215 0 0 0 13.6207,181.323 H 171.5873 A 78.983215,78.983215 0 0 0 92.604,102.428 Z" />
+              </g>
+            </svg>
           </Link>
 
           <button
@@ -105,9 +102,7 @@ function Navbar() {
         aria-hidden={!isOpen}
       >
         <label className="navbar-mobile-search" htmlFor="mobile-event-search">
-          <span className="navbar-search-icon" aria-hidden="true">
-            &#128269;
-          </span>
+          <span className="navbar-search-icon" aria-hidden="true">&#128269;</span>
           <input
             id="mobile-event-search"
             type="search"
