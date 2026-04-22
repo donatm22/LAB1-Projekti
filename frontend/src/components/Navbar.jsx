@@ -3,8 +3,9 @@ import { Link, NavLink, useLocation } from "react-router-dom";
 import "./Navbar.css";
 
 const navItems = [
-  { label: "Discover", to: "/" },
-  { label: "Concerts", href: "#concerts" },
+  { label: "Home", to: "/" },
+  { label: "Events", to: "/" },
+  { label: "About Us", to: "about" },
   { label: "Exhibitions", href: "#exhibitions" },
   { label: "Socials", href: "#socials" },
 ];

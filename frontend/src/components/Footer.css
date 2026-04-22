@@ -1,0 +1,40 @@
+  .aura-footer {
+    margin-top: 0;
+    border-top: 1px solid var(--border);
+    padding: 32px 28px;
+    text-align: center;
+    background: var(--bg);
+  }
+  .aura-footer-logo {
+    font-family: 'Playfair Display', serif;
+    font-size: 16px;
+    letter-spacing: 4px;
+    font-weight: 900;
+    color: var(--ink);
+    text-transform: uppercase;
+    margin-bottom: 16px;
+  }
+  .aura-footer-links { display: flex; justify-content: center; gap: 20px; margin-bottom: 14px; }
+  .aura-footer-links a {
+    text-decoration: none;
+    color: var(--muted);
+    font-size: 11px;
+    transition: color .2s;
+    text-transform: uppercase;
+    letter-spacing: .5px;
+    cursor: pointer;
+  }
+  .aura-footer-links a:hover { color: var(--ink); }
+  .aura-footer-copy { font-size: 10px; color: var(--muted); margin-bottom: 12px; }
+  .aura-footer-socials { display: flex; justify-content: center; gap: 12px; }
+  .aura-social-dot {
+    width: 28px; height: 28px;
+    border-radius: 50%;
+    border: 1px solid var(--border);
+    display: flex; align-items: center; justify-content: center;
+    font-size: 11px;
+    color: var(--muted);
+    cursor: pointer;
+    transition: border-color .2s, color .2s;
+  }
+  .aura-social-dot:hover { border-color: var(--ink); color: var(--ink); }
