@@ -1,0 +1,142 @@
+
+:root {
+  --color-accent: #bfa36a;
+  --color-bg-muted: #f7f3ed;
+  --color-text-main: #1a1a1a;
+  --color-text-dim: #555;
+}
+
+.socials-main {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 80px 20px;
+}
+
+.socials-hero {
+  margin-bottom: 80px;
+}
+
+.socials-headline {
+  font-family: serif;
+  font-size: clamp(2.5rem, 5vw, 4rem);
+  margin: 20px 0;
+}
+
+.socials-headline em {
+  font-style: italic;
+  color: var(--color-accent);
+}
+
+.socials-description {
+  max-width: 550px;
+  font-size: 1.1rem;
+  color: var(--color-text-dim);
+  line-height: 1.6;
+}
+
+/* Grid Layout */
+.socials-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+  gap: 30px;
+}
+
+/* Card Styling */
+.social-card {
+  background: var(--color-bg-muted);
+  border-radius: 16px;
+  text-decoration: none;
+  color: inherit;
+  transition: all 0.3s ease;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  border: 1px solid transparent;
+}
+
+.social-card:hover {
+  transform: translateY(-8px);
+  border-color: var(--color-accent);
+  box-shadow: 0 20px 40px rgba(0,0,0,0.05);
+}
+
+.social-card-icon {
+  height: 180px;
+  background: #1a1a1a;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.social-card-icon span {
+  font-size: 3rem;
+  font-weight: bold;
+  color: var(--color-accent);
+  font-family: serif;
+}
+
+.social-card-body {
+  padding: 30px;
+  flex-grow: 1;
+  display: flex;
+  flex-direction: column;
+}
+
+.social-platform-name {
+  font-family: serif;
+  font-size: 1.5rem;
+  margin-bottom: 4px;
+}
+
+.social-handle {
+  display: block;
+  font-size: 0.85rem;
+  color: var(--color-accent);
+  font-weight: bold;
+  text-transform: uppercase;
+  margin-bottom: 15px;
+}
+
+.social-platform-desc {
+  font-size: 0.95rem;
+  color: var(--color-text-dim);
+  margin-bottom: 25px;
+  flex-grow: 1;
+}
+
+.social-card-footer {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-weight: bold;
+  font-size: 0.8rem;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+}
+
+/* Bottom CTA */
+.social-footer-cta {
+  margin-top: 100px;
+  text-align: center;
+  background: var(--color-bg-muted);
+  padding: 60px;
+  border-radius: 20px;
+}
+
+.cta-box h2 {
+  font-family: serif;
+  font-size: 2rem;
+  margin-bottom: 15px;
+}
+
+.cta-btn {
+  margin-top: 25px;
+  background: #1a1a1a;
+  color: white;
+  border: none;
+  padding: 15px 40px;
+  border-radius: 4px;
+  font-weight: bold;
+  cursor: pointer;
+  text-transform: uppercase;
+}

@@ -7,7 +7,7 @@ const navItems = [
   { label: "Events", to: "/" },
   { label: "About Us", to: "about" },
   { label: "Exhibitions", href: "#exhibitions" },
-  { label: "Socials", href: "#socials" },
+  { label: "Socials", to:"socials" },
 ];
 
 function Navbar() {
