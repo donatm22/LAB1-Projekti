@@ -44,7 +44,7 @@
   font-family: var(--font-display);
   font-size: 16px;
   font-weight: 700;
-  color: var(--color-accent);
+  color: var(--color-accent-light);
   padding-top: 2px;
 }
 
@@ -86,6 +86,10 @@
 .about-section-heading{
     margin-bottom: 14px;
     font-size: 40px;
+}
+
+.about-section-heading em{
+  color: var(--color-accent-light);
 }
 
 .about-team-sub {

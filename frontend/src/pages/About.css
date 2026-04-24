@@ -79,7 +79,7 @@
 
 .about-headline em {
   font-style: italic;
-  color: var(--color-accent);
+  color: var(--color-accent-light);
 }
 
 .about-hero-right {
@@ -101,7 +101,7 @@
 
 .about-btn-primary {
   display: inline-block;
-  background: var(--color-accent);
+  background: var(--color-accent-light);
   color: #fff;
   text-decoration: none;
   border-radius: 24px;
@@ -113,7 +113,7 @@
 }
 
 .about-btn-primary:hover {
-  background: var(--color-accent-light);
+  background: var(--color-accent);
 }
 
 .about-btn-ghost {
@@ -183,7 +183,7 @@
   font-family: var(--font);
   font-size: 22px;
   font-weight: 900;
-  color: var(--color-accent);
+  color: var(--color-accent-light);
 }
 
 .about-timeline-body {
@@ -224,7 +224,7 @@
 }
 
 .about-cta {
-  background: var(--color-accent);
+  background: rgb(228, 152, 11);
   padding: 80px 40px;
 }
 
@@ -248,8 +248,8 @@
 }
 
 .about-cta-body {
-  font-size: 14px;
-  color: rgba(255, 255, 255, 0.72);
+  font-size: 16px;
+  color: rgba(255, 255, 255, 0.938);
   line-height: 1.8;
   margin-bottom: 32px;
 }

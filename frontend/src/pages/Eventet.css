@@ -41,7 +41,7 @@
 
 .headline-accent {
   font-style: italic;
-  color: var(--color-accent);
+  color: var(--color-accent-light);
 }
 
 .filter-row {
