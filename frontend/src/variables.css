@@ -1,7 +1,7 @@
 :root {
   --navbar-height: 80px;
 
-  --color-bg:           #ffffff;
+  --color-bg:           #f5f2ee;
   --color-bg-warm:      #faf7f4;
   --color-bg-dark:      #1a0f0a;
 
@@ -25,6 +25,9 @@
   --radius-sm:  4px;
   --radius-md:  6px;
   --radius-pill: 2px;
+  
+
+  --font:  "Segoe UI", sans-serif;
 
   --transition: all 0.2s ease;
   --transition-slow: all 0.5s cubic-bezier(0.16, 1, 0.3, 1);

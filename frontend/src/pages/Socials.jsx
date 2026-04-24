@@ -36,7 +36,6 @@ function Socials() {
       <Navbar />
       
       <main className="socials-main">
-        {/* Hero Section */}
         <section className="socials-hero">
           <div className="socials-hero-content">
             <span className="eyebrow">Connect</span>
@@ -50,7 +49,6 @@ function Socials() {
           </div>
         </section>
 
-        {/* Socials Grid */}
         <section className="socials-grid-section">
           <div className="socials-grid">
             {SOCIAL_PLATFORMS.map((platform) => (
@@ -82,7 +80,6 @@ function Socials() {
           </div>
         </section>
 
-        {/* CTA Section */}
         <section className="social-footer-cta">
           <div className="cta-box">
             <h2>Never miss a moment.</h2>

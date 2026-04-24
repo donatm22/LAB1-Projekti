@@ -57,12 +57,12 @@
 
 .about-pillar-text {
   font-size: 16px;
-  color: var(--color-muted);
+  color: var(--color-ink-muted);
   line-height: 1.5;
 }
 
 .about-team {
-  background: var(--color-surface);
+  background: var(--color-bg);
   border-top: 1px solid var(--color-border);
   border-bottom: 1px solid var(--color-border);
   padding: 80px 40px;
@@ -78,13 +78,19 @@
   margin-bottom: 48px;
 }
 
-.about-team-header .about-section-heading {
+.about-team-header {
   margin-bottom: 14px;
+  
+}
+
+.about-section-heading{
+    margin-bottom: 14px;
+    font-size: 40px;
 }
 
 .about-team-sub {
-  font-size: 14px;
-  color: var(--color-muted);
+  font-size: 18px;
+  color: var(--color-ink);
   line-height: 1.8;
 }
 
@@ -117,7 +123,7 @@
 }
 
 .about-team-initials {
-  font-family: var(--font-display);
+  font-family: var(--font);
   font-size: 40px;
   font-weight: 900;
   color: var(--color-accent);
@@ -129,7 +135,7 @@
 }
 
 .about-team-name {
-  font-family: var(--font-display);
+  font-family: var(--font);
   font-size: 16px;
   font-weight: 700;
   color: var(--color-ink);
@@ -138,7 +144,7 @@
 
 .about-team-role {
   display: block;
-  font-size: 10px;
+  font-size: 14px;
   letter-spacing: 2px;
   text-transform: uppercase;
   color: var(--color-accent);
@@ -146,7 +152,7 @@
 }
 
 .about-team-bio {
-  font-size: 12px;
-  color: var(--color-muted);
+  font-size: 14px;
+  color: var(--color-ink-muted);
   line-height: 1.75;
 }

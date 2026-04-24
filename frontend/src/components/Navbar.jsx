@@ -4,10 +4,10 @@ import "./Navbar.css";
 
 const navItems = [
   { label: "Home", to: "/" },
-  { label: "Events", to: "/" },
-  { label: "About Us", to: "about" },
+  { label: "Events", href: "events" },
+  { label: "About Us", href: "about" },
   { label: "Exhibitions", href: "#exhibitions" },
-  { label: "Socials", to:"socials" },
+  { label: "Socials", href:"socials" },
 ];
 
 function Navbar() {

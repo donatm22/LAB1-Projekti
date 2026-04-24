@@ -162,7 +162,6 @@ function AboutUs() {
 
         <section className="about-cta">
           <div className="about-cta-inner">
-            <span className="eyebrow eyebrow--light">Join AURA</span>
             <h2 className="about-cta-heading">
               Ready to find your next
               <em> ethereal moment?</em>
@@ -172,7 +171,7 @@ function AboutUs() {
               in their city — curated by humans, not algorithms.
             </p>
             <div className="about-cta-buttons">
-              <a href="/events" className="about-cta-btn-primary">Explore Events</a>
+              <a href="" className="about-cta-btn-primary">Explore Events</a>
               <a href="/membership" className="about-cta-btn-ghost">Become a Member</a>
             </div>
           </div>
@@ -180,8 +179,9 @@ function AboutUs() {
 
       </main>
 
-      <Footer />
+     
     </div>
+     <Footer />
     </div>
   );
 }

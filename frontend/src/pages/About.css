@@ -1,22 +1,6 @@
-
-@import url('https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,700;0,900;1,400&family=DM+Sans:wght@300;400;500&display=swap');
-
-:root {
-  --color-bg:           #f5f2ee;
-  --color-ink:          #1a1814;
-  --color-muted:        #7a7470;
-  --color-accent:       #c8872a;
-  --color-accent-hover: #e8a84a;
-  --color-surface:      #ffffff;
-  --color-border:       #e0dbd4;
-
-  --font-display: 'Playfair Display', serif;
-  --font-body:    'DM Sans', sans-serif;
-}
-
 .about-wrapper {
   background: var(--color-bg);
-  font-family: var(--font-body);
+  font-family: var(--font);
   color: var(--color-ink);
   font-size: 14px;
   line-height: 1.5;
@@ -37,13 +21,9 @@
   margin-bottom: 14px;
 }
 
-.eyebrow--light {
-  color: rgba(255, 255, 255, 0.6);
-}
-
 
 .about-section-heading {
-  font-family: var(--font-display);
+  font-family: var(--font);
   font-size: 36px;
   font-weight: 700;
   color: var(--color-ink);
@@ -88,14 +68,12 @@
   padding-bottom: 56px;
 }
 
-.about-hero-left {}
-
 .about-headline {
-  font-family: var(--font-display);
-  font-size: 58px;
+  font-family: var(--font);
+  font-size: 56px;
   font-weight: 900;
   color: #f5f2ee;
-  line-height: 1.1;
+  line-height: 1.2;
   margin-top: 4px;
 }
 
@@ -135,7 +113,7 @@
 }
 
 .about-btn-primary:hover {
-  background: var(--color-accent-hover);
+  background: var(--color-accent-light);
 }
 
 .about-btn-ghost {
@@ -182,7 +160,7 @@
   grid-template-columns: 100px 1fr 24px;
   gap: 24px;
   align-items: center;
-  padding: 20px 0;
+  padding: 20px 10px;
   border-bottom: 1px solid var(--color-border);
   background: none;
   border-left: none;
@@ -194,7 +172,7 @@
 }
 
 .about-timeline-item:hover {
-  background: rgba(200, 135, 42, 0.04);
+  background: var(--color-bg-warm)
 }
 
 .about-timeline-item.open {
@@ -202,7 +180,7 @@
 }
 
 .about-timeline-year {
-  font-family: var(--font-display);
+  font-family: var(--font);
   font-size: 22px;
   font-weight: 900;
   color: var(--color-accent);
@@ -222,7 +200,7 @@
 
 .about-timeline-desc {
   font-size: 13px;
-  color: var(--color-muted);
+  color: var(--color-ink-muted);
   line-height: 1.75;
   max-width: 560px;
   animation: tlFadeIn 0.2s ease;
@@ -234,7 +212,7 @@
 }
 
 .about-timeline-chevron {
-  color: var(--color-muted);
+  color: var(--color-ink-muted);
   transition: transform 0.2s;
   flex-shrink: 0;
   margin-top: 2px;
@@ -257,8 +235,8 @@
 }
 
 .about-cta-heading {
-  font-family: var(--font-display);
-  font-size: 40px;
+  font-family: var(--font);
+  font-size: 46px;
   font-weight: 900;
   color: #fff;
   line-height: 1.15;
@@ -290,7 +268,7 @@
   text-decoration: none;
   border-radius: 24px;
   padding: 11px 26px;
-  font-size: 12px;
+  font-size: 14px;
   font-weight: 500;
   letter-spacing: 0.5px;
   transition: opacity 0.2s;
@@ -308,7 +286,7 @@
   border: 1px solid rgba(255, 255, 255, 0.45);
   border-radius: 24px;
   padding: 11px 26px;
-  font-size: 12px;
+  font-size: 14px;
   font-weight: 500;
   letter-spacing: 0.5px;
   transition: border-color 0.2s;
