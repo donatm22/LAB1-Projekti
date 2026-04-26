@@ -3,7 +3,7 @@ import { Link, NavLink, useLocation } from "react-router-dom";
 import "./Navbar.css";
 
 const navItems = [
-  { label: "Home", to: "/" },
+  { label: "Home", to: "/home" },
   { label: "Events", href: "events" },
   { label: "About Us", href: "about" },
   { label: "Exhibitions", href: "#exhibitions" },
@@ -32,7 +32,7 @@ function Navbar() {
   return (
     <header className="navbar-shell" ref={menuRef}>
       <nav className="navbar">
-        <Link className="navbar-logo" to="/">
+        <Link className="navbar-logo" to="/home">
           AURA
         </Link>
 

@@ -1,3 +1,4 @@
+import axios from "axios";
 import { apiUrl } from "../config/api";
 
 const TOKEN_KEY = "token";
@@ -17,16 +18,6 @@ const buildHeaders = (token, hasBody = false) => {
   return headers;
 };
 
-const parseResponse = async (response) => {
-  const contentType = response.headers.get("content-type") || "";
-
-  if (contentType.includes("application/json")) {
-    return response.json();
-  }
-
-  return response.text();
-};
-
 const request = async (path, options = {}) => {
   const {
     method = "GET",
@@ -35,18 +26,19 @@ const request = async (path, options = {}) => {
     headers = {},
   } = options;
 
-  const response = await fetch(apiUrl(path), {
+  const response = await axios.request({
+    url: apiUrl(path),
     method,
     headers: {
       ...buildHeaders(token, body !== undefined),
       ...headers,
     },
-    body: body !== undefined ? JSON.stringify(body) : undefined,
+    data: body,
+    validateStatus: () => true,
   });
 
-  const data = await parseResponse(response);
-
-  if (!response.ok) {
+  if (response.status < 200 || response.status >= 300) {
+    const data = response.data;
     const error = new Error(
       data?.message || data?.error || "Request failed"
     );
@@ -55,7 +47,7 @@ const request = async (path, options = {}) => {
     throw error;
   }
 
-  return data;
+  return response.data;
 };
 
 export const tokenStorage = {

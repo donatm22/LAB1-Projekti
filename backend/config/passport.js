@@ -1,7 +1,7 @@
 const passport = require("passport");
 const { Strategy: LocalStrategy } = require("passport-local");
 const bcrypt = require("bcryptjs");
-const db = require("../../database/db");
+const { getUserByEmail, getUserById } = require("../../database/usersStore");
 
 passport.use(
   new LocalStrategy(
@@ -10,28 +10,25 @@ passport.use(
       passwordField: "password"
     },
     (email, password, done) => {
-      db.query('SELECT * FROM "Users" WHERE email = $1', [email], (err, result) => {
-        if (err) {
-          return done(err);
-        }
+      getUserByEmail(email)
+        .then((user) => {
+          if (!user) {
+            return done(null, false, { message: "Invalid email or password" });
+          }
 
-        const user = result.rows[0];
+          const isHashedPassword =
+            typeof user.password === "string" && user.password.startsWith("$2");
+          const isMatch = isHashedPassword
+            ? bcrypt.compareSync(password, user.password)
+            : password === user.password;
 
-        if (!user) {
-          return done(null, false, { message: "Invalid email or password" });
-        }
+          if (!isMatch) {
+            return done(null, false, { message: "Invalid email or password" });
+          }
 
-        const isHashedPassword = typeof user.password === "string" && user.password.startsWith("$2");
-        const isMatch = isHashedPassword
-          ? bcrypt.compareSync(password, user.password)
-          : password === user.password;
-
-        if (!isMatch) {
-          return done(null, false, { message: "Invalid email or password" });
-        }
-
-        return done(null, user);
-      });
+          return done(null, user);
+        })
+        .catch((err) => done(err));
     }
   )
 );
@@ -41,13 +38,9 @@ passport.serializeUser((user, done) => {
 });
 
 passport.deserializeUser((id, done) => {
-  db.query('SELECT * FROM "Users" WHERE id = $1', [id], (err, result) => {
-    if (err) {
-      return done(err);
-    }
-
-    done(null, result.rows[0] || false);
-  });
+  getUserById(id)
+    .then((user) => done(null, user || false))
+    .catch((err) => done(err));
 });
 
 module.exports = passport;

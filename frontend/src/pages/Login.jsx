@@ -1,3 +1,4 @@
+import { Link } from "react-router-dom";
 import { useState} from "react";
 import "./Login.css"
 import { authApi, tokenStorage } from "../services/api";
@@ -52,7 +53,7 @@ function Login(){
 
             <button type="submit">Login</button>
             <div className="links">
-            Don't have an account? <a href="/signup">Sign Up</a>
+            Don't have an account? <Link to="/signup">Sign Up</Link>
             </div>
         </form>
     </div>

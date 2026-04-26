@@ -1,5 +1,5 @@
 const jwt = require("jsonwebtoken");
-const db = require("../../database/db");
+const { getUserById } = require("../../database/usersStore");
 
 const TOKEN_EXPIRES_IN = process.env.JWT_EXPIRES_IN || "1d";
 
@@ -48,16 +48,8 @@ const login = (req, res) => {
 };
 
 const getCurrentSession = (req, res) => {
-  db.query(
-    'SELECT id, emri, email, roli FROM "Users" WHERE id = $1',
-    [req.user.id],
-    (err, result) => {
-      if (err) {
-        return res.status(500).json({ error: err.message });
-      }
-
-      const user = result.rows[0];
-
+  getUserById(req.user.id)
+    .then((user) => {
       if (!user) {
         return res.status(404).json({ message: "User not found" });
       }
@@ -66,8 +58,8 @@ const getCurrentSession = (req, res) => {
         authenticated: true,
         user: sanitizeUser(user)
       });
-    }
-  );
+    })
+    .catch((err) => res.status(500).json({ error: err.message }));
 };
 
 const logout = (req, res) => {
