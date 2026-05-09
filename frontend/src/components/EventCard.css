@@ -3,6 +3,7 @@
   flex-direction: column;
   background: transparent;
   text-decoration: none;
+  color: inherit;
   cursor: pointer;
   transition: var(--transition-slow);
   width: 100%;

@@ -1,13 +1,17 @@
 import React from "react";
+import { Link } from "react-router-dom";
 import "./EventCard.css";
 
-const EventCard = ({ category, speaker, location, date, image, isFeatured }) => {
+const EventCard = ({ id, category, speaker, title, location, date, image, isFeatured }) => {
   return (
-    <article className={`archive-card ${isFeatured ? "featured" : ""}`}>
+    <Link
+      to={`/events/${id}/tickets`}
+      className={`archive-card ${isFeatured ? "featured" : ""}`}
+    >
       <div className="archive-card-image-wrap">
         <img 
           src={image} 
-          alt={`Presentation on ${category}`} 
+          alt={title || `Presentation on ${category}`} 
           className="archive-image"
           loading="lazy" 
         />
@@ -29,7 +33,7 @@ const EventCard = ({ category, speaker, location, date, image, isFeatured }) => 
           {location}
         </p>
       </div>
-    </article>
+    </Link>
   );
 };
 
