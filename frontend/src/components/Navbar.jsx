@@ -1,6 +1,7 @@
 import { useState, useEffect, useRef } from "react";
 import { Link, NavLink, useLocation } from "react-router-dom";
 import "./Navbar.css";
+import { tokenStorage } from "../services/api";
 
 const navItems = [
   { label: "Home", to: "/home" },
@@ -12,12 +13,25 @@ const navItems = [
 
 function Navbar() {
   const [isOpen, setIsOpen] = useState(false);
+  const [currentUser, setCurrentUser] = useState(() => tokenStorage.getUser());
   const location = useLocation();
   const menuRef = useRef(null);
+  const canCreateEvent =
+    currentUser?.roli === "admin" || currentUser?.roli === "organizer";
 
   useEffect(() => {
     setIsOpen(false);
+    setCurrentUser(tokenStorage.getUser());
   }, [location]);
+
+  useEffect(() => {
+    const updateSession = () => {
+      setCurrentUser(tokenStorage.getUser());
+    };
+
+    window.addEventListener("authChanged", updateSession);
+    return () => window.removeEventListener("authChanged", updateSession);
+  }, []);
 
   useEffect(() => {
     function handleClickOutside(e) {
@@ -70,11 +84,22 @@ function Navbar() {
             />
           </label>
 
-          <Link className="navbar-cta" to="/create">
-            Create Event
-          </Link>
+          {canCreateEvent && (
+            <Link className="navbar-cta" to="/create">
+              Create Event
+            </Link>
+          )}
 
-          <Link className="navbar-profile" to="/login" aria-label="Open profile">
+          <Link
+            className="navbar-profile"
+            to={currentUser ? "#" : "/login"}
+            aria-label="Open profile"
+            onClick={(e) => {
+              if (currentUser) {
+                e.preventDefault();
+              }
+            }}
+          >
             <svg viewBox="0 0 185.20833 185.20834" xmlns="http://www.w3.org/2000/svg">
               <g fill="currentColor">
                 <circle cx="92.604" cy="49.077" r="45.192" />
@@ -130,6 +155,12 @@ function Navbar() {
               {item.label}
             </a>
           )
+        )}
+
+        {canCreateEvent && (
+          <Link className="navbar-mobile-link" to="/create">
+            Create Event
+          </Link>
         )}
       </div>
     </header>

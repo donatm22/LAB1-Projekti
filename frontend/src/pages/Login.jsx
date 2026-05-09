@@ -1,9 +1,10 @@
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import { useState} from "react";
 import "./Login.css"
 import { authApi, tokenStorage } from "../services/api";
 
 function Login(){
+    const navigate = useNavigate();
     const [formData, setFormData] = useState({
         email: "",
         password: "",
@@ -25,6 +26,7 @@ function Login(){
             tokenStorage.setToken(data.token);
             tokenStorage.setUser(data.user);
             alert("Login u krye me sukses!");
+            navigate("/");
         }catch(error){
             console.error("Error gjat Login:", error);
             alert(error.message || "Server error");

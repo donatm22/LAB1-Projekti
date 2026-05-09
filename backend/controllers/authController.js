@@ -1,4 +1,5 @@
 const jwt = require("jsonwebtoken");
+require("../config/env");
 const { getUserById } = require("../../database/usersStore");
 
 const TOKEN_EXPIRES_IN = process.env.JWT_EXPIRES_IN || "1d";

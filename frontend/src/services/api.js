@@ -56,9 +56,11 @@ export const tokenStorage = {
   },
   setToken(token) {
     localStorage.setItem(TOKEN_KEY, token);
+    window.dispatchEvent(new Event("authChanged"));
   },
   removeToken() {
     localStorage.removeItem(TOKEN_KEY);
+    window.dispatchEvent(new Event("authChanged"));
   },
   getUser() {
     const rawUser = localStorage.getItem(USER_KEY);
@@ -66,10 +68,12 @@ export const tokenStorage = {
   },
   setUser(user) {
     localStorage.setItem(USER_KEY, JSON.stringify(user));
+    window.dispatchEvent(new Event("authChanged"));
   },
   clear() {
     localStorage.removeItem(TOKEN_KEY);
     localStorage.removeItem(USER_KEY);
+    window.dispatchEvent(new Event("authChanged"));
   },
 };
 
@@ -283,6 +287,15 @@ export const dashboardApi = {
       categories: Array.isArray(categories) ? categories.length : 0,
       organizers: Array.isArray(organizers) ? organizers.length : 0,
     };
+  },
+};
+
+export const chatApi = {
+  send(messages) {
+    return request("/chat", {
+      method: "POST",
+      body: { messages },
+    });
   },
 };
 

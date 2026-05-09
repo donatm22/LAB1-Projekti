@@ -1,7 +1,6 @@
 const express = require("express");
 const cors = require("cors");
-const path = require("path");
-require("dotenv").config({ path: path.join(__dirname, ".env") });
+require("./config/env");
 const passport = require("passport");
 const db = require("../database/db");
 const usersRoutes = require("./routes/usersRoutes");
@@ -21,6 +20,7 @@ const feedbackRoutes = require("./routes/feedbackRoutes");
 const paymentRoutes = require("./routes/paymentsRoutes");
 const registrationRoutes = require("./routes/registrationRoutes")
 const venueRoutes = require("./routes/venueRoutes");
+const chatRoutes = require("./routes/chatRoutes");
 
 require("./config/passport");
 
@@ -72,6 +72,7 @@ app.use("/feedback", feedbackRoutes);
 app.use("/payment", paymentRoutes);
 app.use("/registrations", registrationRoutes);
 app.use("/venues", venueRoutes);
+app.use("/chat", chatRoutes);
 
 app.use((err, req, res, next) => {
   console.error(err.stack);
@@ -82,4 +83,5 @@ const PORT = process.env.PORT || 5000;
 
 app.listen(PORT, () => {
     console.log(`Serveri funksionon ne portin ${PORT}`);
+    console.log(process.env.JWT_SECRET ? "JWT_SECRET loaded" : "JWT_SECRET missing");
 });
