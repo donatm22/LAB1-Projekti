@@ -1,4 +1,5 @@
 import { useMemo, useState } from "react";
+import emailjs from "@emailjs/browser";
 import { Link, useParams } from "react-router-dom";
 import Navbar from "../components/Navbar";
 import { SOUGHT_AFTER_EVENTS } from "../../data/eventsData";
@@ -247,12 +248,30 @@ const formatPrice = (value) =>
     currency: "EUR",
   }).format(value);
 
+const createTicketCode = () =>
+  `TKT-${Date.now().toString(36).toUpperCase()}-${Math.random()
+    .toString(36)
+    .slice(2, 6)
+    .toUpperCase()}`;
+
 function TicketPurchase() {
   const { id } = useParams();
   const event = SOUGHT_AFTER_EVENTS.find((item) => String(item.id) === id);
   const [selectedTicketId, setSelectedTicketId] = useState("standard");
   const [selectedSectionId, setSelectedSectionId] = useState("floor-f2");
   const [quantity, setQuantity] = useState(1);
+  const [checkout, setCheckout] = useState({
+    name: "",
+    email: "",
+    phone: "",
+    cardName: "",
+    cardNumber: "",
+    expiry: "",
+    cvc: "",
+  });
+  const [checkoutStatus, setCheckoutStatus] = useState("idle");
+  const [checkoutMessage, setCheckoutMessage] = useState("");
+  const [ticketCode, setTicketCode] = useState("");
   const isAnymaEvent = event?.speaker?.toLowerCase() === "anyma";
   const selectedSection = useMemo(
     () =>
@@ -284,6 +303,15 @@ function TicketPurchase() {
     return { subtotal, serviceFee, deliveryFee, total };
   }, [selectedTicket, quantity]);
 
+  const handleCheckoutChange = (e) => {
+    const { name, value } = e.target;
+
+    setCheckout((current) => ({
+      ...current,
+      [name]: value,
+    }));
+  };
+
   if (!event) {
     return (
       <div>
@@ -296,8 +324,69 @@ function TicketPurchase() {
     );
   }
 
-  const handlePurchase = () => {
-    alert("Demo purchase completed. Payment connection can be added later.");
+  const handlePurchase = async (e) => {
+    e.preventDefault();
+    setCheckoutMessage("");
+    setTicketCode("");
+
+    const serviceId = import.meta.env.VITE_EMAILJS_SERVICE_ID;
+    const templateId = import.meta.env.VITE_EMAILJS_TEMPLATE_ID;
+    const publicKey = import.meta.env.VITE_EMAILJS_PUBLIC_KEY;
+
+    if (!serviceId || !templateId || !publicKey) {
+      setCheckoutStatus("error");
+      setCheckoutMessage(
+        "EmailJS is not configured yet. Add your VITE_EMAILJS_SERVICE_ID, VITE_EMAILJS_TEMPLATE_ID, and VITE_EMAILJS_PUBLIC_KEY values."
+      );
+      return;
+    }
+
+    if (!checkout.name || !checkout.email || !checkout.cardName) {
+      setCheckoutStatus("error");
+      setCheckoutMessage("Please fill in your name, email, and cardholder name.");
+      return;
+    }
+
+    const newTicketCode = createTicketCode();
+    const sectionLabel = isAnymaEvent
+      ? `${selectedSection.level} ${selectedSection.label}`
+      : selectedTicket.section;
+
+    const templateParams = {
+      to_name: checkout.name,
+      to_email: checkout.email,
+      buyer_phone: checkout.phone || "Not provided",
+      ticket_code: newTicketCode,
+      event_title: event.title,
+      event_speaker: event.speaker,
+      event_location: event.location,
+      event_date: event.date,
+      ticket_type: selectedTicket.name,
+      ticket_section: sectionLabel,
+      ticket_quantity: quantity,
+      subtotal: formatPrice(totals.subtotal),
+      service_fee: formatPrice(totals.serviceFee),
+      delivery_fee: formatPrice(totals.deliveryFee),
+      order_total: formatPrice(totals.total),
+    };
+
+    try {
+      setCheckoutStatus("sending");
+      await emailjs.send(serviceId, templateId, templateParams, {
+        publicKey,
+      });
+      setTicketCode(newTicketCode);
+      setCheckoutStatus("success");
+      setCheckoutMessage(
+        `Ticket sent to ${checkout.email}. Your ticket code is ${newTicketCode}.`
+      );
+    } catch (error) {
+      console.error("EmailJS checkout error:", error);
+      setCheckoutStatus("error");
+      setCheckoutMessage(
+        "Checkout saved, but the ticket email could not be sent. Check your EmailJS template settings and try again."
+      );
+    }
   };
 
   return (
@@ -501,13 +590,120 @@ function TicketPurchase() {
               <strong>{formatPrice(totals.total)}</strong>
             </div>
 
-            <button className="checkout-button" onClick={handlePurchase}>
-              Continue to checkout
-            </button>
+            <form className="checkout-form" onSubmit={handlePurchase}>
+              <div className="checkout-section">
+                <h3>Delivery</h3>
+                <label>
+                  Full name
+                  <input
+                    type="text"
+                    name="name"
+                    value={checkout.name}
+                    onChange={handleCheckoutChange}
+                    placeholder="Ariana Krasniqi"
+                    required
+                  />
+                </label>
+                <label>
+                  Email for ticket
+                  <input
+                    type="email"
+                    name="email"
+                    value={checkout.email}
+                    onChange={handleCheckoutChange}
+                    placeholder="you@example.com"
+                    required
+                  />
+                </label>
+                <label>
+                  Phone
+                  <input
+                    type="tel"
+                    name="phone"
+                    value={checkout.phone}
+                    onChange={handleCheckoutChange}
+                    placeholder="+383 44 000 000"
+                  />
+                </label>
+              </div>
+
+              <div className="checkout-section">
+                <h3>Payment</h3>
+                <label>
+                  Cardholder name
+                  <input
+                    type="text"
+                    name="cardName"
+                    value={checkout.cardName}
+                    onChange={handleCheckoutChange}
+                    placeholder="Ariana Krasniqi"
+                    required
+                  />
+                </label>
+                <label>
+                  Card number
+                  <input
+                    type="text"
+                    name="cardNumber"
+                    value={checkout.cardNumber}
+                    onChange={handleCheckoutChange}
+                    inputMode="numeric"
+                    placeholder="4242 4242 4242 4242"
+                    maxLength="19"
+                  />
+                </label>
+                <div className="checkout-row">
+                  <label>
+                    Expiry
+                    <input
+                      type="text"
+                      name="expiry"
+                      value={checkout.expiry}
+                      onChange={handleCheckoutChange}
+                      placeholder="MM/YY"
+                      maxLength="5"
+                    />
+                  </label>
+                  <label>
+                    CVC
+                    <input
+                      type="text"
+                      name="cvc"
+                      value={checkout.cvc}
+                      onChange={handleCheckoutChange}
+                      inputMode="numeric"
+                      placeholder="123"
+                      maxLength="4"
+                    />
+                  </label>
+                </div>
+              </div>
+
+              <button
+                className="checkout-button"
+                type="submit"
+                disabled={checkoutStatus === "sending"}
+              >
+                {checkoutStatus === "sending" ? "Sending ticket..." : "Pay and email ticket"}
+              </button>
+            </form>
+
+            {checkoutMessage && (
+              <p className={`checkout-message ${checkoutStatus}`}>
+                {checkoutMessage}
+              </p>
+            )}
+
+            {ticketCode && (
+              <div className="ticket-confirmation">
+                <span>Ticket code</span>
+                <strong>{ticketCode}</strong>
+              </div>
+            )}
 
             <p className="summary-note">
-              Tickets are reserved only after checkout. This is a demo purchase
-              flow for your faculty project.
+              This demo checkout sends the ticket by email through EmailJS.
+              Replace it with a payment provider before accepting real cards.
             </p>
           </aside>
         </section>
