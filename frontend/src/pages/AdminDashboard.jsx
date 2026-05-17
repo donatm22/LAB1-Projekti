@@ -153,6 +153,15 @@ const apiMap = {
   organizers: organizersApi,
 };
 
+const RESPONSE_ITEM_KEYS = {
+  events: "event",
+  speakers: "speaker",
+  tickets: "ticket",
+  users: "user",
+  categories: "eventCategories",
+  organizers: "organizer",
+};
+
 const formatDateTimeInput = (value) => {
   if (!value) {
     return "";
@@ -215,6 +224,15 @@ const prettifyKey = (value) =>
   value
     .replaceAll("_", " ")
     .replace(/\b\w/g, (char) => char.toUpperCase());
+
+const getSavedItem = (resource, response) => {
+  if (!response || typeof response !== "object") {
+    return null;
+  }
+
+  const itemKey = RESPONSE_ITEM_KEYS[resource];
+  return response[itemKey] || null;
+};
 
 function AdminDashboard() {
   const [activeResource, setActiveResource] = useState("events");
@@ -377,11 +395,36 @@ function AdminDashboard() {
     try {
       const isEditing = Boolean(editingId[resource]);
       const payload = normalizePayload(resource, forms[resource], isEditing);
+      let savedResponse;
 
       if (isEditing) {
-        await apiMap[resource].update(editingId[resource], payload, token);
+        savedResponse = await apiMap[resource].update(editingId[resource], payload, token);
       } else {
-        await apiMap[resource].create(payload, token);
+        savedResponse = await apiMap[resource].create(payload, token);
+      }
+
+      const savedItem = getSavedItem(resource, savedResponse);
+
+      if (savedItem?.id) {
+        setData((current) => {
+          const currentItems = current[resource];
+          const itemExists = currentItems.some((item) => item.id === savedItem.id);
+          const nextItems = itemExists
+            ? currentItems.map((item) => (item.id === savedItem.id ? savedItem : item))
+            : [...currentItems, savedItem];
+
+          return {
+            ...current,
+            [resource]: nextItems,
+          };
+        });
+
+        if (!isEditing) {
+          setStats((current) => ({
+            ...current,
+            [resource]: current[resource] + 1,
+          }));
+        }
       }
 
       resetResourceForm(resource);

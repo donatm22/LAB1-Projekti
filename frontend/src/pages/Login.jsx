@@ -26,7 +26,7 @@ function Login(){
             tokenStorage.setToken(data.token);
             tokenStorage.setUser(data.user);
             alert("Login u krye me sukses!");
-            navigate("/");
+            navigate(data.user?.roli === "admin" ? "/admin" : "/", { replace: true });
         }catch(error){
             console.error("Error gjat Login:", error);
             alert(error.message || "Server error");
