@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from "react";
-import { Link, NavLink, useLocation } from "react-router-dom";
+import { Link, NavLink, useLocation, useNavigate, useSearchParams } from "react-router-dom";
 import "./Navbar.css";
 import { tokenStorage } from "../services/api";
 
@@ -14,7 +14,10 @@ const navItems = [
 function Navbar() {
   const [isOpen, setIsOpen] = useState(false);
   const [currentUser, setCurrentUser] = useState(() => tokenStorage.getUser());
+  const [searchValue, setSearchValue] = useState("");
   const location = useLocation();
+  const navigate = useNavigate();
+  const [searchParams, setSearchParams] = useSearchParams();
   const menuRef = useRef(null);
   const canCreateEvent =
     currentUser?.roli === "admin" || currentUser?.roli === "organizer";
@@ -23,6 +26,10 @@ function Navbar() {
     setIsOpen(false);
     setCurrentUser(tokenStorage.getUser());
   }, [location]);
+
+  useEffect(() => {
+    setSearchValue(searchParams.get("q") || "");
+  }, [searchParams]);
 
   useEffect(() => {
     const updateSession = () => {
@@ -42,6 +49,32 @@ function Navbar() {
     if (isOpen) document.addEventListener("mousedown", handleClickOutside);
     return () => document.removeEventListener("mousedown", handleClickOutside);
   }, [isOpen]);
+
+  const updateEventSearch = (value, options = {}) => {
+    setSearchValue(value);
+
+    if (location.pathname !== "/events") {
+      return;
+    }
+
+    const nextParams = new URLSearchParams(searchParams);
+
+    if (value.trim()) {
+      nextParams.set("q", value.trim());
+    } else {
+      nextParams.delete("q");
+    }
+
+    setSearchParams(nextParams, { replace: options.replace ?? true });
+  };
+
+  const handleSearchSubmit = (event) => {
+    event.preventDefault();
+    const query = searchValue.trim();
+
+    navigate(query ? `/events?q=${encodeURIComponent(query)}` : "/events");
+    setIsOpen(false);
+  };
 
   return (
     <header className="navbar-shell" ref={menuRef}>
@@ -73,7 +106,7 @@ function Navbar() {
         </ul>
 
         <div className="navbar-actions">
-          <label className="navbar-search" htmlFor="event-search">
+          <form className="navbar-search" onSubmit={handleSearchSubmit}>
             <span className="navbar-search-icon" aria-hidden="true">&#128269;</span>
             <input
               id="event-search"
@@ -81,8 +114,10 @@ function Navbar() {
               name="event-search"
               placeholder="Search events..."
               aria-label="Search events"
+              value={searchValue}
+              onChange={(event) => updateEventSearch(event.target.value)}
             />
-          </label>
+          </form>
 
           {canCreateEvent && (
             <Link className="navbar-cta" to="/create">
@@ -127,7 +162,7 @@ function Navbar() {
         className={`navbar-mobile-menu${isOpen ? " open" : ""}`}
         aria-hidden={!isOpen}
       >
-        <label className="navbar-mobile-search" htmlFor="mobile-event-search">
+        <form className="navbar-mobile-search" onSubmit={handleSearchSubmit}>
           <span className="navbar-search-icon" aria-hidden="true">&#128269;</span>
           <input
             id="mobile-event-search"
@@ -135,8 +170,10 @@ function Navbar() {
             name="event-search"
             placeholder="Search events..."
             aria-label="Search events"
+            value={searchValue}
+            onChange={(event) => updateEventSearch(event.target.value)}
           />
-        </label>
+        </form>
 
         {navItems.map((item) =>
           item.to ? (

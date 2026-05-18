@@ -1,4 +1,5 @@
-import React, { useState } from 'react';
+import React, { useMemo, useState } from 'react';
+import { useSearchParams } from 'react-router-dom';
 import Navbar from "../components/Navbar";
 import Footer from "../components/Footer";
 import EventCard from '../components/EventCard';
@@ -9,6 +10,27 @@ const FILTERS = ['All', 'Upcoming', 'Concerts', 'Educational Talks', 'Comedy'];
  
 const EventsPage = () => {
   const [activeFilter, setActiveFilter] = useState('All');
+  const [searchParams] = useSearchParams();
+  const searchQuery = (searchParams.get('q') || '').trim().toLowerCase();
+  const visibleEvents = useMemo(
+    () =>
+      SOUGHT_AFTER_EVENTS.filter((event) => {
+        const matchesFilter = activeFilter === 'All' || event.category === activeFilter;
+        const searchableText = [
+          event.title,
+          event.speaker,
+          event.category,
+          event.location,
+          event.date,
+        ]
+          .filter(Boolean)
+          .join(' ')
+          .toLowerCase();
+
+        return matchesFilter && (!searchQuery || searchableText.includes(searchQuery));
+      }),
+    [activeFilter, searchQuery]
+  );
  
   return (
     <div>
@@ -41,7 +63,7 @@ const EventsPage = () => {
       
           <div class="hero-rule">
             <span class="rule-label">
-              {SOUGHT_AFTER_EVENTS.length} events available
+              {visibleEvents.length} events available
             </span>
             <div class="rule-line" />
           </div>
@@ -49,17 +71,23 @@ const EventsPage = () => {
  
     
         <section class="grid-section">
-          <div class="grid">
-            {SOUGHT_AFTER_EVENTS.map((event, i) => (
-              <div
-                key={event.id}
-                class="card-wrapper"
-                style={{ animationDelay: `${i * 60}ms` }}
-              >
-                <EventCard {...event} />
-              </div>
-            ))}
-          </div>
+          {visibleEvents.length > 0 ? (
+            <div class="grid">
+              {visibleEvents.map((event, i) => (
+                <div
+                  key={event.id}
+                  class="card-wrapper"
+                  style={{ animationDelay: `${i * 60}ms` }}
+                >
+                  <EventCard {...event} />
+                </div>
+              ))}
+            </div>
+          ) : (
+            <div class="empty-state">
+              No events match your search.
+            </div>
+          )}
         </section>
  
    

@@ -1,4 +1,5 @@
 import React, { useState, useRef } from "react";
+import { Link } from "react-router-dom";
 import "./Home.css";
 import Navbar from "../components/Navbar";
 import Footer from "../components/Footer";
@@ -52,11 +53,14 @@ const FOOTER_LINKS = {
 function Home() {
   const [activeFilter, setActiveFilter] = useState("Educational Talks");
   const [selectedChips, setSelectedChips] = useState([]);
+  const [activeFeaturedIndex, setActiveFeaturedIndex] = useState(0);
   const sliderRef = useRef(null);
 
   const filteredEvents = SOUGHT_AFTER_EVENTS.filter(
     (event) => event.category === activeFilter
   );
+  const featuredEvents = SOUGHT_AFTER_EVENTS.filter((event) => event.isFeatured).slice(0, 4);
+  const activeFeaturedEvent = featuredEvents[activeFeaturedIndex] ?? featuredEvents[0];
 
   const scroll = (direction) => {
     if (!sliderRef.current) return;
@@ -70,6 +74,15 @@ function Home() {
     setSelectedChips((prev) =>
       prev.includes(chip) ? prev.filter((c) => c !== chip) : [...prev, chip]
     );
+  };
+
+  const moveFeaturedCarousel = (direction) => {
+    if (featuredEvents.length === 0) return;
+
+    setActiveFeaturedIndex((currentIndex) => {
+      const offset = direction === "next" ? 1 : -1;
+      return (currentIndex + offset + featuredEvents.length) % featuredEvents.length;
+    });
   };
 
   return (
@@ -113,6 +126,73 @@ function Home() {
               </div>
             ))}
           </div>
+
+          {activeFeaturedEvent && (
+            <div className="featured-carousel" aria-label="Featured events carousel">
+              <div className="featured-carousel-heading">
+                <div>
+                  <span className="hero-section-label">Featured now</span>
+                  <h2>Four events worth putting first.</h2>
+                </div>
+                <div className="slider-arrows">
+                  <button
+                    type="button"
+                    className="slider-arrow"
+                    onClick={() => moveFeaturedCarousel("prev")}
+                    aria-label="Previous featured event"
+                  >
+                    <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
+                      <path d="M10 12L6 8l4-4" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" />
+                    </svg>
+                  </button>
+                  <button
+                    type="button"
+                    className="slider-arrow"
+                    onClick={() => moveFeaturedCarousel("next")}
+                    aria-label="Next featured event"
+                  >
+                    <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
+                      <path d="M6 4l4 4-4 4" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" />
+                    </svg>
+                  </button>
+                </div>
+              </div>
+
+              <div className="featured-carousel-grid">
+                <Link
+                  to={`/events/${activeFeaturedEvent.id}/tickets`}
+                  className="featured-main-card"
+                >
+                  <img src={activeFeaturedEvent.image} alt={activeFeaturedEvent.title} />
+                  <div className="featured-main-overlay">
+                    <span className="archive-category">{activeFeaturedEvent.category}</span>
+                    <h3>{activeFeaturedEvent.title}</h3>
+                    <p>{activeFeaturedEvent.speaker}</p>
+                    <span className="featured-location">{activeFeaturedEvent.location} - {activeFeaturedEvent.date}</span>
+                  </div>
+                </Link>
+
+                <div className="featured-thumbs" aria-label="Choose featured event">
+                  {featuredEvents.map((event, index) => (
+                    <Link
+                      to={`/events/${event.id}/tickets`}
+                      key={event.id}
+                      className={`featured-thumb${activeFeaturedIndex === index ? " active" : ""}`}
+                      onMouseEnter={() => setActiveFeaturedIndex(index)}
+                      onFocus={() => setActiveFeaturedIndex(index)}
+                      aria-current={activeFeaturedIndex === index ? "true" : undefined}
+                    >
+                      <img src={event.image} alt="" aria-hidden="true" />
+                      <span>
+                        <strong>{event.title}</strong>
+                        <small>{event.speaker}</small>
+                      </span>
+                    </Link>
+                  ))}
+                </div>
+              </div>
+            </div>
+          )}
 
           <p className="hero-section-label">Our most sought-after events</p>
 
