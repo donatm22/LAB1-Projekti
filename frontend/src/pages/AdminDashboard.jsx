@@ -104,7 +104,7 @@ const FIELD_CONFIG = {
     { name: "statusi", label: "Status", type: "text", required: true, placeholder: "active" },
     { name: "organizer_id", label: "Organizer", type: "select", required: true },
     { name: "category_id", label: "Category", type: "select", required: true },
-    { name: "imazhi", label: "Image URL", type: "url", required: true },
+    { name: "imazhi", label: "Image", type: "select", required: true },
   ],
   speakers: [
     { name: "emri", label: "Name", type: "text", required: true },
@@ -143,6 +143,24 @@ const TABLE_COLUMNS = {
   categories: ["id", "emri", "pershkrimi"],
   organizers: ["id", "emri_organizates", "email", "telefoni", "website"],
 };
+
+const EVENT_IMAGE_OPTIONS = [
+  { value: "/best_events/lecture1.jpg", label: "Lecture 1" },
+  { value: "/best_events/lecture2.jpg", label: "Lecture 2" },
+  { value: "/best_events/lecture3.jpg", label: "Lecture 3" },
+  { value: "/best_events/lecture4.jpg", label: "Lecture 4" },
+  { value: "/best_events/lecture5.jpg", label: "Lecture 5" },
+  { value: "/best_events/lecture6.jpg", label: "Lecture 6" },
+  { value: "/best_events/lecture7.jpg", label: "Lecture 7" },
+  { value: "/best_events/lecture8.jpg", label: "Lecture 8" },
+  { value: "/best_events/lecture9.jpg", label: "Lecture 9" },
+  { value: "/best_events/lecture10.jpg", label: "Lecture 10" },
+  { value: "/best_events/lecture11.jpg", label: "Lecture 11" },
+  { value: "/best_events/lecture12.jpg", label: "Lecture 12" },
+  { value: "/best_events/concert1.webp", label: "Concert 1" },
+  { value: "/best_events/concert2.webp", label: "Concert 2" },
+  { value: "/best_events/concert3.webp", label: "Concert 3" },
+];
 
 const apiMap = {
   events: eventsApi,
@@ -283,6 +301,7 @@ function AdminDashboard() {
         value: event.id,
         label: event.titulli,
       })),
+      imazhi: EVENT_IMAGE_OPTIONS,
       roli: [
         { value: "user", label: "user" },
         { value: "admin", label: "admin" },

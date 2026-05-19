@@ -1,8 +1,10 @@
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import emailjs from "@emailjs/browser";
 import { Link, useParams } from "react-router-dom";
 import Navbar from "../components/Navbar";
 import { SOUGHT_AFTER_EVENTS } from "../../data/eventsData";
+import { eventCategoriesApi, eventsApi } from "../services/api";
+import { mapApiEventToCard } from "../utils/eventMapper";
 import "./TicketPurchase.css";
 
 const ticketOptions = [
@@ -256,7 +258,10 @@ const createTicketCode = () =>
 
 function TicketPurchase() {
   const { id } = useParams();
-  const event = SOUGHT_AFTER_EVENTS.find((item) => String(item.id) === id);
+  const staticEvent = SOUGHT_AFTER_EVENTS.find((item) => String(item.id) === id);
+  const [apiEvent, setApiEvent] = useState(null);
+  const [loadingEvent, setLoadingEvent] = useState(id?.startsWith("db-"));
+  const event = apiEvent || staticEvent;
   const [selectedTicketId, setSelectedTicketId] = useState("standard");
   const [selectedSectionId, setSelectedSectionId] = useState("floor-f2");
   const [quantity, setQuantity] = useState(1);
@@ -272,6 +277,46 @@ function TicketPurchase() {
   const [checkoutStatus, setCheckoutStatus] = useState("idle");
   const [checkoutMessage, setCheckoutMessage] = useState("");
   const [ticketCode, setTicketCode] = useState("");
+
+  useEffect(() => {
+    if (!id?.startsWith("db-")) {
+      setApiEvent(null);
+      setLoadingEvent(false);
+      return;
+    }
+
+    let isMounted = true;
+    const backendId = id.replace("db-", "");
+
+    setLoadingEvent(true);
+
+    Promise.all([eventsApi.getById(backendId), eventCategoriesApi.getAll()])
+      .then(([eventData, categories]) => {
+        if (!isMounted) {
+          return;
+        }
+
+        setApiEvent(
+          mapApiEventToCard(eventData, Array.isArray(categories) ? categories : [])
+        );
+      })
+      .catch((error) => {
+        console.error("Failed to load event:", error);
+        if (isMounted) {
+          setApiEvent(null);
+        }
+      })
+      .finally(() => {
+        if (isMounted) {
+          setLoadingEvent(false);
+        }
+      });
+
+    return () => {
+      isMounted = false;
+    };
+  }, [id]);
+
   const isAnymaEvent = event?.speaker?.toLowerCase() === "anyma";
   const selectedSection = useMemo(
     () =>
@@ -311,6 +356,17 @@ function TicketPurchase() {
       [name]: value,
     }));
   };
+
+  if (loadingEvent) {
+    return (
+      <div>
+        <Navbar />
+        <main className="ticket-empty">
+          <h1>Loading event...</h1>
+        </main>
+      </div>
+    );
+  }
 
   if (!event) {
     return (
@@ -355,6 +411,12 @@ function TicketPurchase() {
     const templateParams = {
       to_name: checkout.name,
       to_email: checkout.email,
+      name: checkout.name,
+      email: checkout.email,
+      user_name: checkout.name,
+      user_email: checkout.email,
+      reply_to: checkout.email,
+      from_name: "Event Management App",
       buyer_phone: checkout.phone || "Not provided",
       ticket_code: newTicketCode,
       event_title: event.title,
@@ -382,9 +444,11 @@ function TicketPurchase() {
       );
     } catch (error) {
       console.error("EmailJS checkout error:", error);
+      const emailJsError =
+        error?.text || error?.message || "Unknown EmailJS error";
       setCheckoutStatus("error");
       setCheckoutMessage(
-        "Checkout saved, but the ticket email could not be sent. Check your EmailJS template settings and try again."
+        `Checkout saved, but the ticket email could not be sent. EmailJS says: ${emailJsError}`
       );
     }
   };

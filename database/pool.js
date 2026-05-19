@@ -2,18 +2,28 @@ const path = require("path");
 require("dotenv").config({ path: path.join(__dirname, "..", "backend", ".env") });
 const { Pool } = require("pg");
 
-const pool = new Pool({
-  host: process.env.DB_HOST || "localhost",
-  user: process.env.DB_USER || "postgres",
-  password: process.env.DB_PASSWORD || "",
-  database: process.env.DB_DATABASE || "postgres",
-  port: process.env.DB_PORT ? Number(process.env.DB_PORT) : 5432,
+const usesSsl =
+  process.env.DB_SSL === "true" ||
+  Boolean(process.env.DATABASE_URL || process.env.SUPABASE_DB_URL);
+
+const poolConfig = {
   max: process.env.DB_CONNECTION_LIMIT ? Number(process.env.DB_CONNECTION_LIMIT) : 10,
-  ssl:
-    process.env.DB_SSL === "true"
-      ? { rejectUnauthorized: false }
-      : undefined
-});
+  ssl: usesSsl ? { rejectUnauthorized: false } : undefined,
+};
+
+const connectionString = process.env.DATABASE_URL || process.env.SUPABASE_DB_URL;
+
+if (connectionString) {
+  poolConfig.connectionString = connectionString;
+} else {
+  poolConfig.host = process.env.DB_HOST || "localhost";
+  poolConfig.user = process.env.DB_USER || "postgres";
+  poolConfig.password = process.env.DB_PASSWORD || "";
+  poolConfig.database = process.env.DB_DATABASE || "postgres";
+  poolConfig.port = process.env.DB_PORT ? Number(process.env.DB_PORT) : 5432;
+}
+
+const pool = new Pool(poolConfig);
 
 pool.query("SELECT 1")
   .then(() => {

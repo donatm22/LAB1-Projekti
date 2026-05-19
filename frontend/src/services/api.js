@@ -124,8 +124,8 @@ export const usersApi = {
 };
 
 export const eventsApi = {
-  getAll() {
-    return request("/event");
+  getAll(token = tokenStorage.getToken()) {
+    return request("/event", { token });
   },
   getById(id) {
     return request(`/event/${id}`);
@@ -153,8 +153,8 @@ export const eventsApi = {
 };
 
 export const speakersApi = {
-  getAll() {
-    return request("/speaker");
+  getAll(token = tokenStorage.getToken()) {
+    return request("/speaker", { token });
   },
   getById(id) {
     return request(`/speaker/${id}`);
@@ -182,8 +182,8 @@ export const speakersApi = {
 };
 
 export const ticketsApi = {
-  getAll() {
-    return request("/ticket");
+  getAll(token = tokenStorage.getToken()) {
+    return request("/ticket", { token });
   },
   getById(id) {
     return request(`/ticket/${id}`);
@@ -211,8 +211,8 @@ export const ticketsApi = {
 };
 
 export const eventCategoriesApi = {
-  getAll() {
-    return request("/eventCategories");
+  getAll(token = tokenStorage.getToken()) {
+    return request("/eventCategories", { token });
   },
   getById(id) {
     return request(`/eventCategories/${id}`);
@@ -240,8 +240,8 @@ export const eventCategoriesApi = {
 };
 
 export const organizersApi = {
-  getAll() {
-    return request("/organizers");
+  getAll(token = tokenStorage.getToken()) {
+    return request("/organizers", { token });
   },
   getById(id) {
     return request(`/organizers/${id}`);

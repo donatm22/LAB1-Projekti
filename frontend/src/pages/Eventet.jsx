@@ -1,20 +1,54 @@
-import React, { useMemo, useState } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import Navbar from "../components/Navbar";
 import Footer from "../components/Footer";
 import EventCard from '../components/EventCard';
+import { eventCategoriesApi, eventsApi } from "../services/api";
 import { SOUGHT_AFTER_EVENTS } from "../../data/eventsData";
+import { mapApiEventToCard } from "../utils/eventMapper";
 import './Eventet.css';
  
 const FILTERS = ['All', 'Upcoming', 'Concerts', 'Educational Talks', 'Comedy'];
  
 const EventsPage = () => {
   const [activeFilter, setActiveFilter] = useState('All');
+  const [apiEvents, setApiEvents] = useState([]);
   const [searchParams] = useSearchParams();
   const searchQuery = (searchParams.get('q') || '').trim().toLowerCase();
+  const allEvents = useMemo(
+    () => [...apiEvents, ...SOUGHT_AFTER_EVENTS],
+    [apiEvents]
+  );
+
+  useEffect(() => {
+    let isMounted = true;
+
+    Promise.all([eventsApi.getAll(), eventCategoriesApi.getAll()])
+      .then(([events, categories]) => {
+        if (!isMounted) {
+          return;
+        }
+
+        const mappedEvents = Array.isArray(events)
+          ? events.map((event) =>
+              mapApiEventToCard(event, Array.isArray(categories) ? categories : [])
+            )
+          : [];
+
+        setApiEvents(mappedEvents);
+      })
+      .catch((error) => {
+        console.error("Failed to load events:", error);
+      });
+
+    return () => {
+      isMounted = false;
+    };
+  }, []);
+
   const visibleEvents = useMemo(
     () =>
-      SOUGHT_AFTER_EVENTS.filter((event) => {
+      allEvents.filter((event) => {
         const matchesFilter = activeFilter === 'All' || event.category === activeFilter;
         const searchableText = [
           event.title,
@@ -29,7 +63,7 @@ const EventsPage = () => {
 
         return matchesFilter && (!searchQuery || searchableText.includes(searchQuery));
       }),
-    [activeFilter, searchQuery]
+    [activeFilter, allEvents, searchQuery]
   );
  
   return (

@@ -1,10 +1,12 @@
-import React, { useState, useRef } from "react";
+import React, { useEffect, useMemo, useState, useRef } from "react";
 import { Link } from "react-router-dom";
 import "./Home.css";
 import Navbar from "../components/Navbar";
 import Footer from "../components/Footer";
 import EventCard from "../components/EventCard";
+import { eventCategoriesApi, eventsApi } from "../services/api";
 import { SOUGHT_AFTER_EVENTS } from "../../data/eventsData";
+import { mapApiEventToCard } from "../utils/eventMapper";
 
 const FILTER_CHIPS = [
   "Educational Talks",
@@ -54,12 +56,44 @@ function Home() {
   const [activeFilter, setActiveFilter] = useState("Educational Talks");
   const [selectedChips, setSelectedChips] = useState([]);
   const [activeFeaturedIndex, setActiveFeaturedIndex] = useState(0);
+  const [apiEvents, setApiEvents] = useState([]);
   const sliderRef = useRef(null);
 
-  const filteredEvents = SOUGHT_AFTER_EVENTS.filter(
+  useEffect(() => {
+    let isMounted = true;
+
+    Promise.all([eventsApi.getAll(), eventCategoriesApi.getAll()])
+      .then(([events, categories]) => {
+        if (!isMounted) {
+          return;
+        }
+
+        const mappedEvents = Array.isArray(events)
+          ? events.map((event) =>
+              mapApiEventToCard(event, Array.isArray(categories) ? categories : [])
+            )
+          : [];
+
+        setApiEvents(mappedEvents);
+      })
+      .catch((error) => {
+        console.error("Failed to load client events:", error);
+      });
+
+    return () => {
+      isMounted = false;
+    };
+  }, []);
+
+  const allEvents = useMemo(
+    () => [...apiEvents, ...SOUGHT_AFTER_EVENTS],
+    [apiEvents]
+  );
+
+  const filteredEvents = allEvents.filter(
     (event) => event.category === activeFilter
   );
-  const featuredEvents = SOUGHT_AFTER_EVENTS.filter((event) => event.isFeatured).slice(0, 4);
+  const featuredEvents = allEvents.filter((event) => event.isFeatured).slice(0, 4);
   const activeFeaturedEvent = featuredEvents[activeFeaturedIndex] ?? featuredEvents[0];
 
   const scroll = (direction) => {

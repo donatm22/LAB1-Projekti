@@ -1,7 +1,31 @@
 const passport = require("passport");
 const { Strategy: LocalStrategy } = require("passport-local");
 const bcrypt = require("bcryptjs");
-const { getUserByEmail, getUserById } = require("../../database/usersStore");
+const db = require("../../database/db");
+
+const getUserByEmail = (email) =>
+  new Promise((resolve, reject) => {
+    db.query('SELECT * FROM "Users" WHERE email = $1 LIMIT 1', [email], (err, result) => {
+      if (err) {
+        reject(err);
+        return;
+      }
+
+      resolve(result.rows[0] || null);
+    });
+  });
+
+const getUserById = (id) =>
+  new Promise((resolve, reject) => {
+    db.query('SELECT * FROM "Users" WHERE id = $1 LIMIT 1', [id], (err, result) => {
+      if (err) {
+        reject(err);
+        return;
+      }
+
+      resolve(result.rows[0] || null);
+    });
+  });
 
 passport.use(
   new LocalStrategy(
