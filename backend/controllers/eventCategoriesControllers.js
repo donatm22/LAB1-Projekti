@@ -69,6 +69,7 @@ const updateEventCategories = (req, res) =>{
         }
         res.status(200).json({
             message:"Kategoria u perditesua me sukses",
+            eventCategories: result.rows[0]
         });
     });
 };

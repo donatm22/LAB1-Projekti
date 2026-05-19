@@ -56,7 +56,7 @@ const updateEventSponsor = (req, res) =>{
             message: "Input jo valid!"
         });
     }
-    db.query("UPDATE EventSponsors SET event_id = $1, sponsor_id = $2, shuma = $3  WHERE id = $4 RETURNING *", [event_id, sponsor_id, shuma], (err, result) =>{
+    db.query("UPDATE EventSponsors SET event_id = $1, sponsor_id = $2, shuma = $3  WHERE id = $4 RETURNING *", [event_id, sponsor_id, shuma, id], (err, result) =>{
         if(err){
             return res.status(500).json({
                 error: err.message
@@ -69,6 +69,7 @@ const updateEventSponsor = (req, res) =>{
         }
         res.status(200).json({
             message:"Sponsori i eventit u perditesua me sukses",
+            eventSponsor: result.rows[0]
         });
     });
 };

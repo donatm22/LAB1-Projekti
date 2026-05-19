@@ -316,7 +316,7 @@ function AdminDashboard() {
     setError("");
 
     try {
-      const [statsData, events, speakers, tickets, categories, organizers, users] =
+      const [statsData, events, speakers, tickets, categories, organizers, usersResult] =
         await Promise.all([
           dashboardApi.getStats(token),
           eventsApi.getAll(),
@@ -324,17 +324,20 @@ function AdminDashboard() {
           ticketsApi.getAll(),
           eventCategoriesApi.getAll(),
           organizersApi.getAll(),
-          token ? usersApi.getAll(token) : Promise.resolve([]),
+           token ? usersApi.getAll(token).catch(() => null) : Promise.resolve(null),
         ]);
 
-      setStats(statsData);
+      setStats({
+        ...statsData,
+        users: Array.isArray(usersResult) ? usersResult.length : statsData.users,
+      });
       setData({
         events: Array.isArray(events) ? events : [],
         speakers: Array.isArray(speakers) ? speakers : [],
         tickets: Array.isArray(tickets) ? tickets : [],
         categories: Array.isArray(categories) ? categories : [],
         organizers: Array.isArray(organizers) ? organizers : [],
-        users: Array.isArray(users) ? users : [],
+        users: Array.isArray(usersResult) ? usersResult : [],
       });
     } catch (loadError) {
       setError(loadError.message || "Failed to load dashboard data.");

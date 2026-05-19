@@ -83,6 +83,7 @@ const updateEvent = (req, res) =>{
 
         res.status(200).json({
             message: "Eventi u perditesua me sukses",
+            event: result.rows[0]
         });
     });
 };

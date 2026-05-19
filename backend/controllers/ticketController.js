@@ -83,7 +83,7 @@ const updateTicket = (req, res) => {
                     message: "Bileta nuk u gjet"
                 });
             }
-            res.json({
+            res.status(200).json({
                 message: "Bileta u perditesua me sukses",
                 ticket: result.rows[0]
             });

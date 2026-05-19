@@ -270,14 +270,22 @@ export const organizersApi = {
 
 export const dashboardApi = {
   async getStats(token = tokenStorage.getToken()) {
-    const [users, events, speakers, tickets, categories, organizers] = await Promise.all([
-      usersApi.getAll(token),
-      eventsApi.getAll(),
-      speakersApi.getAll(),
-      ticketsApi.getAll(),
-      eventCategoriesApi.getAll(),
-      organizersApi.getAll(),
-    ]);
+    const [usersResult, eventsResult, speakersResult, ticketsResult, categoriesResult, organizersResult] =
+      await Promise.allSettled([
+        token ? usersApi.getAll(token) : Promise.resolve([]),
+        eventsApi.getAll(),
+        speakersApi.getAll(),
+        ticketsApi.getAll(),
+        eventCategoriesApi.getAll(),
+        organizersApi.getAll(),
+      ]);
+
+    const users = usersResult.status === "fulfilled" ? usersResult.value : [];
+    const events = eventsResult.status === "fulfilled" ? eventsResult.value : [];
+    const speakers = speakersResult.status === "fulfilled" ? speakersResult.value : [];
+    const tickets = ticketsResult.status === "fulfilled" ? ticketsResult.value : [];
+    const categories = categoriesResult.status === "fulfilled" ? categoriesResult.value : [];
+    const organizers = organizersResult.status === "fulfilled" ? organizersResult.value : [];
 
     return {
       users: Array.isArray(users) ? users.length : 0,

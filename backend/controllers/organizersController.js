@@ -69,7 +69,7 @@ const updateOrganizer = (req, res) => {
         return res.status(404).json({ message: "Organizatori nuk u gjet" });
       }
 
-      return res.json({
+      return res.status(200).json({
         message: "Organizatori u perditesua me sukses",
         organizer: result.rows[0],
       });
