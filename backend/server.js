@@ -1,3 +1,16 @@
+process.on("uncaughtException", (err) => {
+  console.error("UNCAUGHT EXCEPTION:", err);
+});
+
+process.on("unhandledRejection", (reason) => {
+  console.error("UNHANDLED REJECTION:", reason);
+});
+
+process.on("exit", (code) => {
+  console.log("PROCESS EXITED WITH CODE:", code);
+});
+
+
 const express = require("express");
 const cors = require("cors");
 require("./config/env");
