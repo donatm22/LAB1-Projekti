@@ -5,7 +5,8 @@ class Registrations {
     user_id = null,
     ticket_id = null,
     data_regjistrimit = null,
-    statusi = null
+    statusi = null,
+    reminder_sent = false
   } = {}) {
     this.id = id;
     this.event_id = event_id;
@@ -13,6 +14,7 @@ class Registrations {
     this.ticket_id = ticket_id;
     this.data_regjistrimit = data_regjistrimit;
     this.statusi = statusi;
+    this.reminder_sent = reminder_sent;
   }
 }
 

@@ -1,5 +1,9 @@
 const db = require("../../database/db");
 const { buildPDF, generateTicketQR } = require("../services/ticketService");
+const {
+    sendBookingConfirmation,
+    sendBookingCancellation
+} = require("../services/bookingEmailService");
 
 const getRegistrations = (req, res) => {
     db.query('SELECT * FROM "Registrations" ORDER BY id ASC', (err, results) => {
@@ -80,23 +84,64 @@ const createRegistration = (req, res) => {
             return res.status(400).json({ message: "Nuk ka bileta te disponueshme" });
         }
 
-        const sql = `INSERT INTO "Registrations" (event_id, user_id, ticket_id, data_regjistrimit, statusi)
-                     VALUES ($1, $2, $3, NOW(), 'pending') RETURNING *`;
+        const sql = `INSERT INTO "Registrations" (event_id, user_id, ticket_id, data_regjistrimit, statusi, reminder_sent)
+                     VALUES ($1, $2, $3, NOW(), 'pending', false) RETURNING *`;
 
         db.query(sql, [event_id, user_id, ticket_id], (err, result) => {
             if (err) {
                 return res.status(500).json({ error: err.message });
             }
 
+            const registration = result.rows[0];
+
             db.query(
                 'UPDATE "Tickets" SET sasia = sasia - 1 WHERE id = $1',
                 [ticket_id]
             );
 
+            // Return success immediately
             res.status(201).json({
                 message: "Regjistrimi u krye me sukses",
-                registration: result.rows[0]
+                registration: registration
             });
+
+            // Send confirmation email asynchronously (fire-and-forget pattern)
+            // Query for user and event details
+            db.query(
+                `SELECT u.emri as user_name, u.email as user_email, e.emri as event_name, 
+                        e.data_nisjes as event_date, e.lokacioni as event_location
+                 FROM "Users" u
+                 JOIN "Events" e ON e.id = $1
+                 WHERE u.id = $2`,
+                [event_id, user_id],
+                async (err, userEventResult) => {
+                    if (err) {
+                        console.error('❌ Error fetching user/event details for email:', err.message);
+                        return;
+                    }
+
+                    if (userEventResult.rows.length === 0) {
+                        console.error('❌ User or event not found for email');
+                        return;
+                    }
+
+                    const userEvent = userEventResult.rows[0];
+
+                    const bookingData = {
+                        userName: userEvent.user_name,
+                        userEmail: userEvent.user_email,
+                        eventName: userEvent.event_name,
+                        eventDate: new Date(userEvent.event_date).toLocaleString(),
+                        eventLocation: userEvent.event_location,
+                        bookingId: registration.id
+                    };
+
+                    // Send email asynchronously without blocking the response
+                    sendBookingConfirmation(bookingData).catch(error => {
+                        console.error('❌ Error sending confirmation email:', error.message);
+                    });
+                }
+            );
         });
     });
 };
@@ -155,7 +200,43 @@ const deleteRegistration = (req, res) => {
                 [registration.ticket_id]
             );
 
+            // Return success immediately
             res.json({ message: "Regjistrimi u fshi me sukses" });
+
+            // Send cancellation email asynchronously (fire-and-forget pattern)
+            // Query for user and event details
+            db.query(
+                `SELECT u.emri as user_name, u.email as user_email, e.emri as event_name
+                 FROM "Users" u
+                 JOIN "Registrations" r ON r.user_id = u.id
+                 JOIN "Events" e ON e.id = r.event_id
+                 WHERE r.id = $1`,
+                [id],
+                async (err, userEventResult) => {
+                    if (err) {
+                        console.error('❌ Error fetching user/event details for cancellation email:', err.message);
+                        return;
+                    }
+
+                    if (userEventResult.rows.length === 0) {
+                        console.error('❌ User or event not found for cancellation email');
+                        return;
+                    }
+
+                    const userEvent = userEventResult.rows[0];
+
+                    const cancellationData = {
+                        userName: userEvent.user_name,
+                        userEmail: userEvent.user_email,
+                        eventName: userEvent.event_name
+                    };
+
+                    // Send email asynchronously without blocking the response
+                    sendBookingCancellation(cancellationData).catch(error => {
+                        console.error('❌ Error sending cancellation email:', error.message);
+                    });
+                }
+            );
         });
     });
 };

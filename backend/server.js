@@ -34,6 +34,8 @@ const paymentRoutes = require("./routes/paymentsRoutes");
 const registrationRoutes = require("./routes/registrationRoutes")
 const venueRoutes = require("./routes/venueRoutes");
 const chatRoutes = require("./routes/chatRoutes");
+const emailRoutes = require("./routes/emailRoutes");
+const { initializeReminderCron } = require("./cron/reminderCron");
 
 require("./config/passport");
 
@@ -104,6 +106,10 @@ app.use("/payment", paymentRoutes);
 app.use("/registrations", registrationRoutes);
 app.use("/venues", venueRoutes);
 app.use("/chat", chatRoutes);
+app.use("/email", emailRoutes);
+
+// Initialize reminder cron job
+initializeReminderCron();
 
 app.use((err, req, res, next) => {
   console.error(err.stack);
