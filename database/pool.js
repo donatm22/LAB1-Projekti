@@ -18,8 +18,8 @@ if (connectionString) {
 } else {
   poolConfig.host = process.env.DB_HOST || "localhost";
   poolConfig.user = process.env.DB_USER || "postgres";
-  poolConfig.password = process.env.DB_PASSWORD || "";
-  poolConfig.database = process.env.DB_DATABASE || "postgres";
+  poolConfig.password = process.env.DB_PASSWORD || "postgres";
+  poolConfig.database = process.env.DB_DATABASE || "lab1";
   poolConfig.port = process.env.DB_PORT ? Number(process.env.DB_PORT) : 5432;
 }
 

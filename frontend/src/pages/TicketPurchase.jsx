@@ -1,8 +1,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { Link, useParams } from "react-router-dom";
 import Navbar from "../components/Navbar";
-import { eventCategoriesApi, eventsApi, tokenStorage } from "../services/api";
-import { sendEmail } from "../services/emailService";
+import { emailApi, eventCategoriesApi, eventsApi, tokenStorage } from "../services/api";
 import { mapApiEventToCard } from "../utils/eventMapper";
 import "./TicketPurchase.css";
 
@@ -279,6 +278,18 @@ function TicketPurchase() {
   const isAdmin = currentUser?.roli === "admin";
 
   useEffect(() => {
+    if (!currentUser) {
+      return;
+    }
+
+    setCheckout((current) => ({
+      ...current,
+      name: current.name || currentUser.emri || "",
+      email: currentUser.email || "",
+    }));
+  }, [currentUser]);
+
+  useEffect(() => {
     if (!id?.startsWith("db-")) {
       setApiEvent(null);
       setLoadingEvent(false);
@@ -385,15 +396,21 @@ function TicketPurchase() {
     setCheckoutMessage("");
     setTicketCode("");
 
+    if (!currentUser) {
+      setCheckoutStatus("error");
+      setCheckoutMessage("Please log in before buying a ticket.");
+      return;
+    }
+
     if (isAdmin) {
       setCheckoutStatus("error");
       setCheckoutMessage("Admins cannot purchase tickets.");
       return;
     }
 
-    if (!checkout.name || !checkout.email || !checkout.cardName) {
+    if (!checkout.name || !currentUser.email || !checkout.cardName) {
       setCheckoutStatus("error");
-      setCheckoutMessage("Please fill in your name, email, and cardholder name.");
+      setCheckoutMessage("Please fill in your name and cardholder name.");
       return;
     }
 
@@ -402,41 +419,29 @@ function TicketPurchase() {
       ? `${selectedSection.level} ${selectedSection.label}`
       : selectedTicket.section;
 
-    const templateParams = {
-      to_name: checkout.name,
-      to_email: checkout.email,
-      name: checkout.name,
-      email: checkout.email,
-      user_name: checkout.name,
-      user_email: checkout.email,
-      reply_to: checkout.email,
-      from_name: "Event Management App",
-      buyer_phone: checkout.phone || "Not provided",
-      ticket_code: newTicketCode,
-      event_title: event.title,
-      event_speaker: event.speaker,
-      event_location: event.location,
-      event_date: event.date,
-      ticket_type: selectedTicket.name,
-      ticket_section: sectionLabel,
-      ticket_quantity: quantity,
-      subtotal: formatPrice(totals.subtotal),
-      service_fee: formatPrice(totals.serviceFee),
-      delivery_fee: formatPrice(totals.deliveryFee),
-      order_total: formatPrice(totals.total),
+    const emailPayload = {
+      buyerPhone: checkout.phone || "Not provided",
+      ticketCode: newTicketCode,
+      eventTitle: event.title,
+      eventSpeaker: event.speaker,
+      eventLocation: event.location,
+      eventDate: event.date,
+      ticketType: selectedTicket.name,
+      ticketSection: sectionLabel,
+      ticketQuantity: quantity,
+      orderTotal: formatPrice(totals.total),
     };
 
     try {
       setCheckoutStatus("sending");
-      // Use optimized email service with 10 second timeout
-      await sendEmail(templateParams, 10000);
+      await emailApi.sendTicketPurchase(emailPayload);
       setTicketCode(newTicketCode);
       setCheckoutStatus("success");
       setCheckoutMessage(
-        `Ticket sent to ${checkout.email}. Your ticket code is ${newTicketCode}.`
+        `Ticket sent to ${currentUser.email}. Your ticket code is ${newTicketCode}.`
       );
     } catch (error) {
-      console.error("Email checkout error:", error);
+      console.error("Ticket purchase email error:", error);
       const errorMessage = error?.message || error?.text || "Unknown error";
       setCheckoutStatus("error");
       setCheckoutMessage(
@@ -666,8 +671,8 @@ function TicketPurchase() {
                     type="email"
                     name="email"
                     value={checkout.email}
-                    onChange={handleCheckoutChange}
-                    placeholder="you@example.com"
+                    readOnly
+                    placeholder="Login required"
                     required
                   />
                 </label>
@@ -758,8 +763,8 @@ function TicketPurchase() {
             )}
 
             <p className="summary-note">
-              This demo checkout sends the ticket by email through EmailJS.
-              Replace it with a payment provider before accepting real cards.
+              Ticket confirmation is sent with Resend to the email on your logged-in account.
+              Replace this demo checkout with a payment provider before accepting real cards.
             </p>
           </aside>
         </section>

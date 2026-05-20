@@ -140,6 +140,91 @@ router.post('/send-booking-confirmation', verifyToken, async (req, res) => {
 });
 
 /**
+ * Send a ticket purchase confirmation email to the current logged-in user
+ * POST /email/send-ticket-purchase
+ * Body: { ticketCode, eventTitle, eventSpeaker, eventLocation, eventDate, ticketType, ticketSection, ticketQuantity, orderTotal, buyerPhone }
+ */
+router.post('/send-ticket-purchase', verifyToken, async (req, res) => {
+  try {
+    const userId = req.user.id;
+    const {
+      ticketCode,
+      eventTitle,
+      eventSpeaker,
+      eventLocation,
+      eventDate,
+      ticketType,
+      ticketSection,
+      ticketQuantity,
+      orderTotal,
+      buyerPhone
+    } = req.body;
+
+    if (!ticketCode || !eventTitle || !eventDate || !ticketType || !ticketQuantity || !orderTotal) {
+      return res.status(400).json({
+        message: 'Please provide ticketCode, eventTitle, eventDate, ticketType, ticketQuantity, and orderTotal'
+      });
+    }
+
+    db.query(
+      'SELECT emri, email FROM "Users" WHERE id = $1',
+      [userId],
+      async (err, result) => {
+        if (err) {
+          return res.status(500).json({ error: err.message });
+        }
+
+        if (result.rows.length === 0) {
+          return res.status(404).json({ message: 'User not found' });
+        }
+
+        const user = result.rows[0];
+
+        const emailResponse = await sendEmailToUser(
+          user.email,
+          `Ticket Confirmation - ${eventTitle}`,
+          `
+            <h2>Hello World</h2>
+            <p>Congrats on sending your <strong>first email</strong> with Resend!</p>
+            <p>Hi <strong>${user.emri}</strong>, your ticket purchase is confirmed.</p>
+            <h3>Ticket details</h3>
+            <ul>
+              <li><strong>Ticket code:</strong> ${ticketCode}</li>
+              <li><strong>Event:</strong> ${eventTitle}</li>
+              <li><strong>Speaker/Artist:</strong> ${eventSpeaker || 'TBA'}</li>
+              <li><strong>Location:</strong> ${eventLocation || 'TBA'}</li>
+              <li><strong>Date:</strong> ${eventDate}</li>
+              <li><strong>Ticket type:</strong> ${ticketType}</li>
+              <li><strong>Section:</strong> ${ticketSection || 'General Admission'}</li>
+              <li><strong>Quantity:</strong> ${ticketQuantity}</li>
+              <li><strong>Total paid:</strong> ${orderTotal}</li>
+              <li><strong>Phone:</strong> ${buyerPhone || 'Not provided'}</li>
+            </ul>
+            <p>We have sent this confirmation to your logged-in account email: <strong>${user.email}</strong>.</p>
+          `
+        );
+
+        if (emailResponse.success) {
+          res.json({
+            message: 'Ticket confirmation email sent successfully',
+            messageId: emailResponse.messageId,
+            sentTo: user.email
+          });
+        } else {
+          res.status(400).json({
+            message: 'Failed to send email',
+            error: emailResponse.error
+          });
+        }
+      }
+    );
+  } catch (error) {
+    console.error('❌ Error in send-ticket-purchase endpoint:', error.message);
+    res.status(500).json({ error: error.message });
+  }
+});
+
+/**
  * Test endpoint: Send a custom email
  * POST /email/send-custom
  * Body: { subject, html }

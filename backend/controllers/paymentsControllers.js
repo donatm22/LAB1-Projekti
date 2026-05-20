@@ -1,7 +1,7 @@
 const db = require ("../../database/db");
 
 const getPayments = (req, res) =>{
-    db.query("SELECT * FROM Payments ORDER BY id ASC", (err, result) =>{
+    db.query('SELECT * FROM "Payments" ORDER BY id ASC', (err, result) =>{
         if(err){
             return res.status(500).json({
                 error: err.message
@@ -13,7 +13,7 @@ const getPayments = (req, res) =>{
 
 const getPaymentsById = (req, res) =>{
     const {id} = req.params;
-    db.query("SELECT * FROM Payments WHERE id = $1", [id], (err, result) =>{
+    db.query('SELECT * FROM "Payments" WHERE id = $1', [id], (err, result) =>{
         if(err){
             return res.status(500).json({
                 error: err.message
@@ -35,7 +35,7 @@ const createPayment = (req, res) =>{
             message: "Pagesa nuk eshte plotesuar!"
         });
     }
-    db.query("INSERT INTO Payments (registration_id, shuma, metoda, data, statusi) VALUES ($1, $2, $3, $4, $5) RETURNING *", [registration_id, shuma, metoda, data, statusi], (err, result) =>{
+    db.query('INSERT INTO "Payments" (registration_id, shuma, metoda, data, statusi) VALUES ($1, $2, $3, $4, $5) RETURNING *', [registration_id, shuma, metoda, data, statusi], (err, result) =>{
         if(err){
             return res.status(500).json({
                 error: err.message
@@ -56,7 +56,7 @@ const updatePayment = (req, res) =>{
             message: "Input jo valid!"
         });
     }
-    db.query("UPDATE Payments SET registration_id = $1, shuma = $2, metoda = $3, data = $4, statusi = $5 WHERE id = $6 RETURNING *", [registration_id, shuma, metoda, data, statusi], (err, result) =>{
+    db.query('UPDATE "Payments" SET registration_id = $1, shuma = $2, metoda = $3, data = $4, statusi = $5 WHERE id = $6 RETURNING *', [registration_id, shuma, metoda, data, statusi, id], (err, result) =>{
         if(err){
             return res.status(500).json({
                 error: err.message
@@ -76,7 +76,7 @@ const updatePayment = (req, res) =>{
 const deletePayments = (req, res) =>{
     const {id} = req.params;
     
-    db.query("DELETE FROM Payments WHERE id = $1", [id], (err, result) =>{
+    db.query('DELETE FROM "Payments" WHERE id = $1', [id], (err, result) =>{
         if(err){
             return res.status(500).json({
                 error: err.message

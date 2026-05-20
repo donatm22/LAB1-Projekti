@@ -2,7 +2,6 @@ import { BrowserRouter, Routes, Route } from "react-router-dom";
 import { lazy, Suspense, useEffect } from "react";
 import { authApi, tokenStorage } from "./services/api";
 import { preloadComponents } from "./utils/lazyLoadingUtils";
-import { preInitializeEmailJS } from "./services/emailService";
 import LoadingFallback from "./components/LoadingFallback";
 import ErrorBoundary from "./components/ErrorBoundary";
 
@@ -44,9 +43,6 @@ function App() {
     if (!tokenStorage.getToken()) {
       authApi.refresh().catch(() => {});
     }
-
-    // Pre-initialize EmailJS in background for faster ticket sending
-    preInitializeEmailJS().catch(() => {});
 
     // Preload frequently visited pages after initial render for faster navigation
     const preloadCommonPages = () => {

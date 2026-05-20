@@ -65,11 +65,17 @@ const getRegistrationsByUser = (req, res) => {
 };
 
 const createRegistration = (req, res) => {
-    const { event_id, user_id, ticket_id } = req.body;
+    const { event_id, ticket_id } = req.body;
+    const user_id = req.user?.id;
 
-    if (!event_id || !user_id || !ticket_id) {
-        return res.status(400).json({ message: "Ploteso event_id, user_id dhe ticket_id" });
+    if (!event_id || !ticket_id) {
+        return res.status(400).json({ message: "Ploteso event_id dhe ticket_id" });
     }
+
+    if (!user_id) {
+        return res.status(401).json({ message: "Perdoruesi nuk eshte i autentikuar" });
+    }
+
     db.query('SELECT * FROM "Tickets" WHERE id = $1', [ticket_id], (err, ticketResult) => {
         if (err) {
             return res.status(500).json({ error: err.message });
@@ -105,8 +111,7 @@ const createRegistration = (req, res) => {
                 registration: registration
             });
 
-            // Send confirmation email asynchronously (fire-and-forget pattern)
-            // Query for user and event details
+            // Send confirmation email asynchronously to the authenticated user
             db.query(
                 `SELECT u.emri as user_name, u.email as user_email, e.emri as event_name, 
                         e.data_nisjes as event_date, e.lokacioni as event_location

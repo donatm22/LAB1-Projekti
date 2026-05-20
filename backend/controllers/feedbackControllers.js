@@ -1,7 +1,7 @@
 const db = require("../../database/db");
 
 const getFeedbacks = (req, res) => {
-    db.query("SELECT * FROM Feedback ORDER BY id ASC", (err, results) => {
+    db.query('SELECT * FROM "Feedback" ORDER BY id ASC', (err, results) => {
         if (err) {
             return res.status(500).json({ error: err.message });
         }
@@ -12,7 +12,7 @@ const getFeedbacks = (req, res) => {
 const getFeedbackById = (req, res) => {
     const { id } = req.params;
 
-    db.query("SELECT * FROM Feedback WHERE id = $1", [id], (err, results) => {
+    db.query('SELECT * FROM "Feedback" WHERE id = $1', [id], (err, results) => {
         if (err) {
             return res.status(500).json({ error: err.message });
         }
@@ -26,7 +26,7 @@ const getFeedbackById = (req, res) => {
 const getFeedbackByEvent = (req, res) => {
     const { event_id } = req.params;
 
-    db.query("SELECT * FROM Feedback WHERE event_id = $1 ORDER BY data DESC", [event_id], (err, results) => {
+    db.query('SELECT * FROM "Feedback" WHERE event_id = $1 ORDER BY data DESC', [event_id], (err, results) => {
         if (err) {
             return res.status(500).json({ error: err.message });
         }
@@ -48,7 +48,7 @@ const createFeedback = (req, res) => {
         return res.status(400).json({ message: "Vleresimi duhet te jete ndermjet 1 dhe 5" });
     }
 
-    const sql = `INSERT INTO Feedback (event_id, user_id, vleresimi, komenti, data) 
+    const sql = `INSERT INTO "Feedback" (event_id, user_id, vleresimi, komenti, data) 
                  VALUES ($1, $2, $3, $4, NOW()) RETURNING *`;
     const values = [event_id, user_id, vleresimi, komenti];
 
@@ -75,7 +75,7 @@ const updateFeedback = (req, res) => {
         return res.status(400).json({ message: "Vleresimi duhet te jete ndermjet 1 dhe 5" });
     }
 
-    const sql = `UPDATE Feedback SET vleresimi = $1, komenti = $2 WHERE id = $3 RETURNING *`;
+    const sql = `UPDATE "Feedback" SET vleresimi = $1, komenti = $2 WHERE id = $3 RETURNING *`;
     const values = [vleresimi, komenti, id];
 
     db.query(sql, values, (err, result) => {
@@ -95,7 +95,7 @@ const updateFeedback = (req, res) => {
 const deleteFeedback = (req, res) => {
     const { id } = req.params;
 
-    db.query("DELETE FROM Feedback WHERE id = $1", [id], (err, result) => {
+    db.query('DELETE FROM "Feedback" WHERE id = $1', [id], (err, result) => {
         if (err) {
             return res.status(500).json({ error: err.message });
         }

@@ -67,6 +67,7 @@ const EMPTY_FORMS = {
   },
   speakers: {
     emri: "",
+    event_ids: "",
   },
   tickets: {
     event_id: "",
@@ -103,10 +104,23 @@ const FIELD_CONFIG = {
     { name: "statusi", label: "Status", type: "text", required: true, placeholder: "active" },
     { name: "organizer_id", label: "Organizer", type: "select", required: true },
     { name: "category_id", label: "Category", type: "select", required: true },
-    { name: "imazhi", label: "Image", type: "select", required: true },
+    {
+      name: "imazhi",
+      label: "Photos",
+      type: "textarea",
+      required: false,
+      placeholder: "Add up to 10 image URLs, one per line",
+    },
   ],
   speakers: [
     { name: "emri", label: "Name", type: "text", required: true },
+    {
+      name: "event_ids",
+      label: "Connected events",
+      type: "textarea",
+      required: true,
+      placeholder: "Paste one event ID per line",
+    },
   ],
   tickets: [
     { name: "event_id", label: "Event", type: "select", required: true },
@@ -140,10 +154,6 @@ const TABLE_COLUMNS = {
   categories: ["id", "emri"],
   organizers: ["id", "emri_organizates", "email", "telefoni", "website"],
 };
-
-const EVENT_IMAGE_OPTIONS = [
-  { value: "/profile.svg", label: "Default" },
-];
 
 const apiMap = {
   events: eventsApi,
@@ -193,7 +203,10 @@ const normalizePayload = (resource, values, isEditing) => {
   }
 
   if (resource === "speakers") {
-    delete payload.bio;
+    payload.event_ids = String(payload.event_ids || "")
+      .split(/\r?\n|,/)
+      .map((value) => value.trim())
+      .filter(Boolean);
   }
 
   if (resource === "users" && isEditing && !payload.password) {
@@ -226,6 +239,19 @@ const getFormValuesFromItem = (resource, item) => {
     organizer_id: item.organizer_id ?? "",
     category_id: item.category_id ?? "",
     event_id: item.event_id ?? "",
+    imazhi: (() => {
+      if (!item.imazhi) {
+        return "";
+      }
+
+      try {
+        const parsed = JSON.parse(item.imazhi);
+        return Array.isArray(parsed) ? parsed.join("\n") : item.imazhi;
+      } catch {
+        return item.imazhi;
+      }
+    })(),
+    event_ids: Array.isArray(item.event_ids) ? item.event_ids.join("\n") : "",
     password: "",
   };
 };
@@ -279,6 +305,15 @@ function AdminDashboard() {
 
   const token = tokenStorage.getToken();
   const currentUser = tokenStorage.getUser();
+  const isOrganizer = currentUser?.roli === "organizer";
+  const visibleResourceEntries = useMemo(() => {
+    return Object.entries(RESOURCE_CONFIG).filter(([key]) => {
+      if (isOrganizer && key === "users") {
+        return false;
+      }
+      return true;
+    });
+  }, [isOrganizer]);
 
   // Check authorization on component mount
   useEffect(() => {
@@ -302,7 +337,6 @@ function AdminDashboard() {
         value: event.id,
         label: event.titulli,
       })),
-      imazhi: EVENT_IMAGE_OPTIONS,
       roli: [
         { value: "user", label: "user" },
         { value: "admin", label: "admin" },
@@ -320,7 +354,7 @@ function AdminDashboard() {
       const [statsData, events, speakers, tickets, categories, organizers, usersResult] =
         await Promise.all([
           dashboardApi.getStats(token),
-          eventsApi.getAll(),
+          eventsApi.getManaged(token),
           speakersApi.getAll(),
           ticketsApi.getAll(),
           eventCategoriesApi.getAll(),
@@ -330,7 +364,7 @@ function AdminDashboard() {
 
       setStats({
         ...statsData,
-        users: Array.isArray(usersResult) ? usersResult.length : statsData.users,
+        users: isOrganizer ? 0 : Array.isArray(usersResult) ? usersResult.length : statsData.users,
       });
       setData({
         events: Array.isArray(events) ? events : [],
@@ -345,7 +379,13 @@ function AdminDashboard() {
     } finally {
       setLoading(false);
     }
-  }, [token]);
+  }, [isOrganizer, token]);
+
+  useEffect(() => {
+    if (isOrganizer && activeResource === "users") {
+      setActiveResource("events");
+    }
+  }, [activeResource, isOrganizer]);
 
   useEffect(() => {
     loadDashboard();
@@ -516,10 +556,12 @@ function AdminDashboard() {
         </section>
 
         <section className="stats-grid">
-          <div className="stat-card">
-            <span>Users</span>
-            <strong>{loading ? "..." : stats.users}</strong>
-          </div>
+          {!isOrganizer ? (
+            <div className="stat-card">
+              <span>Users</span>
+              <strong>{loading ? "..." : stats.users}</strong>
+            </div>
+          ) : null}
           <div className="stat-card">
             <span>Events</span>
             <strong>{loading ? "..." : stats.events}</strong>
@@ -547,7 +589,7 @@ function AdminDashboard() {
 
         <section className="dashboard-layout">
           <aside className="dashboard-sidebar">
-            {Object.entries(RESOURCE_CONFIG).map(([key, config]) => (
+            {visibleResourceEntries.map(([key, config]) => (
               <button
                 key={key}
                 type="button"
@@ -635,6 +677,10 @@ function AdminDashboard() {
                         )}
                         {isPasswordEditField ? (
                           <small>Leave blank to keep the current password.</small>
+                        ) : activeResource === "events" && field.name === "imazhi" ? (
+                          <small>One image URL per line. Maximum 10 photos.</small>
+                        ) : activeResource === "speakers" && field.name === "event_ids" ? (
+                          <small>At least one event ID is required for every speaker.</small>
                         ) : null}
                       </label>
                     );

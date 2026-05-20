@@ -1,5 +1,6 @@
 const express = require("express");
 const verifyToken = require("../middleware/authMiddleware");
+const optionalAuth = require("../middleware/optionalAuthMiddleware");
 const allowRoles = require("../middleware/roleMiddleware");
 const {
     getEvents,
@@ -11,7 +12,7 @@ const {
 
 const router = express.Router();
 
-router.get("/", getEvents);
+router.get("/", optionalAuth, getEvents);
 
 router.get("/:id", getEventById);
 

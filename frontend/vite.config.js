@@ -6,20 +6,22 @@ export default defineConfig({
     react(),
   ],
   build: {
-    // Code splitting configuration for optimal performance
     rollupOptions: {
       output: {
-        manualChunks: {
-          // Split vendor libraries
-          'vendor-react': ['react', 'react-router-dom', 'react-dom'],
-          // Split page chunks
-          'page-auth': ['./src/pages/Login.jsx', './src/pages/Signup.jsx'],
-          'page-core': ['./src/pages/Home.jsx', './src/pages/Eventet.jsx'],
-          'page-admin': ['./src/pages/AdminDashboard.jsx'],
-          'page-account': ['./src/pages/Account.jsx'],
-          'page-info': ['./src/pages/About.jsx', './src/pages/Socials.jsx'],
+        manualChunks(id) {
+          if (id.includes('node_modules')) {
+            if (id.includes('react-router-dom')) {
+              return 'vendor-router'
+            }
+            if (id.includes('react-dom') || id.includes('react')) {
+              return 'vendor-react'
+            }
+            if (id.includes('axios')) {
+              return 'vendor-axios'
+            }
+            return 'vendor'
+          }
         },
-        // Optimize chunk size
         chunkFileNames: 'js/[name]-[hash].js',
         entryFileNames: 'js/[name]-[hash].js',
         assetFileNames: ({ name }) => {
@@ -32,7 +34,6 @@ export default defineConfig({
         },
       },
     },
-    // Increase chunk size warning limit for larger chunks
     chunkSizeWarningLimit: 500,
   },
 })

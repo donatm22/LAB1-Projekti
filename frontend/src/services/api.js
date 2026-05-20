@@ -274,6 +274,9 @@ export const eventsApi = {
   getAll(token = tokenStorage.getToken()) {
     return request("/event", { token });
   },
+  getManaged(token = tokenStorage.getToken()) {
+    return request("/event?scope=manage", { token });
+  },
   getById(id) {
     return request(`/event/${id}`);
   },
@@ -480,6 +483,17 @@ export const chatApi = {
     return request("/chat", {
       method: "POST",
       body: { messages },
+    });
+  },
+};
+
+export const emailApi = {
+  sendTicketPurchase(payload, token = tokenStorage.getToken()) {
+    return request("/email/send-ticket-purchase", {
+      method: "POST",
+      body: payload,
+      token,
+      useCache: false,
     });
   },
 };

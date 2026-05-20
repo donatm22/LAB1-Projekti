@@ -21,6 +21,19 @@ export const mapApiEventToCard = (event, categories = []) => {
     (item) => Number(item.id) === Number(event.category_id)
   );
 
+  let primaryImage = event.imazhi;
+
+  if (typeof event.imazhi === "string") {
+    try {
+      const parsedImages = JSON.parse(event.imazhi);
+      if (Array.isArray(parsedImages) && parsedImages.length > 0) {
+        primaryImage = parsedImages[0];
+      }
+    } catch {
+      primaryImage = event.imazhi;
+    }
+  }
+
   return {
     id: `db-${event.id}`,
     backendId: event.id,
@@ -29,7 +42,7 @@ export const mapApiEventToCard = (event, categories = []) => {
     title: event.titulli,
     location: event.lokacioni,
     date: formatEventDate(event.data_fillimit),
-    image: event.imazhi || "/profile.svg",
+    image: primaryImage || "/profile.svg",
     isFeatured: true,
     description: event.pershkrimi,
   };

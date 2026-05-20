@@ -1,7 +1,7 @@
 const db = require("../../database/db");
 
 const getSponsors = (req, res) => {
-    db.query("SELECT * FROM Sponsors ORDER BY id ASC", (err, result) => {
+    db.query('SELECT * FROM "Sponsors" ORDER BY id ASC', (err, result) => {
         if (err) {
             return res.status(500).json({
                 error: err.message
@@ -13,7 +13,7 @@ const getSponsors = (req, res) => {
 
 const getSponsorById = (req, res) => {
     const { id } = req.params;
-    db.query("SELECT * FROM Sponsors WHERE id = $1", [id], (err, result) => {
+    db.query('SELECT * FROM "Sponsors" WHERE id = $1', [id], (err, result) => {
         if (err) {
             return res.status(500).json({
                 error: err.message
@@ -35,7 +35,7 @@ const createSponsor = (req, res) => {
             message: "Te dhenat nuk jane vendosur"
         })
     }
-    db.query("INSERT INTO Sponsors (emertimi, logoja, website, niveli_sponsorizimit) VALUES($1, $2, $3, $4) RETURNING *", [emertimi, logoja, website, niveli_sponsorizimit], (err, result) => {
+    db.query('INSERT INTO "Sponsors" (emertimi, logoja, website, niveli_sponsorizimit) VALUES($1, $2, $3, $4) RETURNING *', [emertimi, logoja, website, niveli_sponsorizimit], (err, result) => {
         if (err) {
             return res.status(500).json({
                 error: err.message
@@ -63,7 +63,7 @@ const updateSponsor = (req, res) => {
         });
     }
 
-    db.query("UPDATE Sponsors SET emertimi = $1, logoja = $2, website = $3, niveli_sponsorizimit = $4 WHERE id = $5 RETURNING *",
+    db.query('UPDATE "Sponsors" SET emertimi = $1, logoja = $2, website = $3, niveli_sponsorizimit = $4 WHERE id = $5 RETURNING *',
         [emertimi, logoja, website, niveli_sponsorizimit, id],
         (err, result) => {
             if (err) {
@@ -87,7 +87,7 @@ const updateSponsor = (req, res) => {
 const deleteSponsor = (req, res) =>{
     const {id} = req.params;
     
-    db.query("DELETE FROM Sponsors WHERE id = $1", [id], (err, result) =>{
+    db.query('DELETE FROM "Sponsors" WHERE id = $1', [id], (err, result) =>{
         if(err){
             return res.status(500).json({
                 error: err.message
