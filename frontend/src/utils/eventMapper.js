@@ -25,11 +25,11 @@ export const mapApiEventToCard = (event, categories = []) => {
     id: `db-${event.id}`,
     backendId: event.id,
     category: category?.emri || "Upcoming",
-    speaker: "AURA Event",
+    speaker: event.speaker || event.titulli || "Upcoming",
     title: event.titulli,
     location: event.lokacioni,
     date: formatEventDate(event.data_fillimit),
-    image: event.imazhi || "/best_events/lecture1.jpg",
+    image: event.imazhi || "/profile.svg",
     isFeatured: true,
     description: event.pershkrimi,
   };

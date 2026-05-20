@@ -5,7 +5,7 @@ import Navbar from "../components/Navbar";
 import Footer from "../components/Footer";
 import EventCard from "../components/EventCard";
 import { eventCategoriesApi, eventsApi } from "../services/api";
-import { SOUGHT_AFTER_EVENTS } from "../../data/eventsData";
+// static events removed: use only dynamically fetched events
 import { mapApiEventToCard } from "../utils/eventMapper";
 
 const FILTER_CHIPS = [
@@ -85,10 +85,7 @@ function Home() {
     };
   }, []);
 
-  const allEvents = useMemo(
-    () => [...apiEvents, ...SOUGHT_AFTER_EVENTS],
-    [apiEvents]
-  );
+  const allEvents = useMemo(() => apiEvents, [apiEvents]);
 
   const filteredEvents = allEvents.filter(
     (event) => event.category === activeFilter
@@ -141,13 +138,7 @@ function Home() {
                 intimate gatherings designed to move you.
               </p>
               <div className="hero-cta-row">
-                <a href="#events" className="hero-btn-primary">Get Started</a>
-                <a href="#archive" className="hero-btn-ghost">
-                  Explore Archive
-                  <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
-                    <path d="M2 7h10M8 3l4 4-4 4" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round"/>
-                  </svg>
-                </a>
+                <a href="/events" className="hero-btn-primary">Get Started</a>
               </div>
             </div>
           </div>
@@ -219,7 +210,7 @@ function Home() {
                       <img src={event.image} alt="" aria-hidden="true" />
                       <span>
                         <strong>{event.title}</strong>
-                        <small>{event.speaker}</small>
+                        <i>{event.location}</i>
                       </span>
                     </Link>
                   ))}
@@ -227,53 +218,6 @@ function Home() {
               </div>
             </div>
           )}
-
-          <p className="hero-section-label">Our most sought-after events</p>
-
-          <div className="hero-filters-row">
-            <div className="hero-filters">
-              <button className="filter-icon-btn">
-                <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
-                  <path d="M1 3h12M3 7h8M5 11h4" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" />
-                </svg>
-                Refine
-              </button>
-              <div className="filter-divider" />
-              {FILTER_CHIPS.map((chip) => (
-                <button
-                  key={chip}
-                  className={`filter-chip${activeFilter === chip ? " active" : ""}`}
-                  onClick={() => setActiveFilter(chip)}
-                >
-                  {chip}
-                </button>
-              ))}
-            </div>
-            <div className="slider-arrows">
-              <button className="slider-arrow" onClick={() => scroll("prev")} aria-label="Previous events">
-                <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
-                  <path d="M10 12L6 8l4-4" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" />
-                </svg>
-              </button>
-              <button className="slider-arrow" onClick={() => scroll("next")} aria-label="Next events">
-                <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
-                  <path d="M6 4l4 4-4 4" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" />
-                </svg>
-              </button>
-            </div>
-          </div>
-
-          <div className="hero-slider" ref={sliderRef}>
-            {filteredEvents.length > 0 ? (
-              filteredEvents.map((event) => (
-                <div className="hero-slide" key={event.id}>
-                  <EventCard {...event} />
-                </div>
-              ))
-            ) : (
-              <p className="hero-empty">No events found in this category yet.</p>
-            )}
-          </div>
         </section>
 
         <section className="why-aura">

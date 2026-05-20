@@ -25,7 +25,10 @@ const EventCard = ({ id, category, speaker, title, location, date, image, isFeat
           <span className="archive-category">{category}</span>
           <span className="archive-date">{date}</span>
         </div>
-        <h4 className="archive-speaker-name">{speaker}</h4>
+        <h4 className="archive-speaker-name">{title}</h4>
+        {speaker ? (
+          <p className="archive-speaker-sub">{speaker}</p>
+        ) : null}
         <p className="archive-location">
           <svg width="10" height="12" viewBox="0 0 11 13" fill="none" aria-hidden="true">
             <path d="M5.5 1C3.015 1 1 3.015 1 5.5c0 3.375 4.5 7.5 4.5 7.5s4.5-4.125 4.5-7.5C10 3.015 7.985 1 5.5 1zm0 6.25a1.75 1.75 0 1 1 0-3.5 1.75 1.75 0 0 1 0 3.5z" fill="currentColor"/>

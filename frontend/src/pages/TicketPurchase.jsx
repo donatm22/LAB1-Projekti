@@ -2,7 +2,6 @@ import { useEffect, useMemo, useState } from "react";
 import emailjs from "@emailjs/browser";
 import { Link, useParams } from "react-router-dom";
 import Navbar from "../components/Navbar";
-import { SOUGHT_AFTER_EVENTS } from "../../data/eventsData";
 import { eventCategoriesApi, eventsApi } from "../services/api";
 import { mapApiEventToCard } from "../utils/eventMapper";
 import "./TicketPurchase.css";
@@ -258,10 +257,9 @@ const createTicketCode = () =>
 
 function TicketPurchase() {
   const { id } = useParams();
-  const staticEvent = SOUGHT_AFTER_EVENTS.find((item) => String(item.id) === id);
   const [apiEvent, setApiEvent] = useState(null);
   const [loadingEvent, setLoadingEvent] = useState(id?.startsWith("db-"));
-  const event = apiEvent || staticEvent;
+  const event = apiEvent;
   const [selectedTicketId, setSelectedTicketId] = useState("standard");
   const [selectedSectionId, setSelectedSectionId] = useState("floor-f2");
   const [quantity, setQuantity] = useState(1);

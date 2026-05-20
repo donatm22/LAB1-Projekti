@@ -4,7 +4,7 @@ import Navbar from "../components/Navbar";
 import Footer from "../components/Footer";
 import EventCard from '../components/EventCard';
 import { eventCategoriesApi, eventsApi } from "../services/api";
-import { SOUGHT_AFTER_EVENTS } from "../../data/eventsData";
+// static events removed: use only dynamically fetched events
 import { mapApiEventToCard } from "../utils/eventMapper";
 import './Eventet.css';
  
@@ -15,10 +15,7 @@ const EventsPage = () => {
   const [apiEvents, setApiEvents] = useState([]);
   const [searchParams] = useSearchParams();
   const searchQuery = (searchParams.get('q') || '').trim().toLowerCase();
-  const allEvents = useMemo(
-    () => [...apiEvents, ...SOUGHT_AFTER_EVENTS],
-    [apiEvents]
-  );
+  const allEvents = useMemo(() => apiEvents, [apiEvents]);
 
   useEffect(() => {
     let isMounted = true;
