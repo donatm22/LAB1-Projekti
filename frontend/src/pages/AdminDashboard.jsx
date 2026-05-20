@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
+import { useNavigate } from "react-router-dom";
 import Navbar from "../components/Navbar";
 import "./AdminDashboard.css";
 import {
@@ -253,6 +254,7 @@ const getSavedItem = (resource, response) => {
 };
 
 function AdminDashboard() {
+  const navigate = useNavigate();
   const [activeResource, setActiveResource] = useState("events");
   const [stats, setStats] = useState({
     users: 0,
@@ -286,6 +288,14 @@ function AdminDashboard() {
 
   const token = tokenStorage.getToken();
   const currentUser = tokenStorage.getUser();
+
+  // Check authorization on component mount
+  useEffect(() => {
+    const isAuthorized = currentUser?.roli === "admin" || currentUser?.roli === "organizer";
+    if (!isAuthorized) {
+      navigate("/");
+    }
+  }, [currentUser, navigate]);
 
   const selectOptions = useMemo(
     () => ({
@@ -465,7 +475,6 @@ function AdminDashboard() {
   const activeFields = FIELD_CONFIG[activeResource];
   const activeColumns = TABLE_COLUMNS[activeResource];
   const isEditingActive = Boolean(editingId[activeResource]);
-  const hasAdminAccess = currentUser?.roli === "admin" || currentUser?.roli === "organizer";
 
   return (
     <div className="admin-page">
@@ -513,12 +522,6 @@ function AdminDashboard() {
             <strong>{loading ? "..." : stats.organizers}</strong>
           </div>
         </section>
-
-        {!hasAdminAccess ? (
-          <div className="dashboard-message error">
-            You need an `admin` or `organizer` account in local storage to use protected CRUD actions.
-          </div>
-        ) : null}
 
         {error ? <div className="dashboard-message error">{error}</div> : null}
         {success ? <div className="dashboard-message success">{success}</div> : null}
@@ -620,7 +623,7 @@ function AdminDashboard() {
                 </div>
 
                 <div className="form-actions">
-                  <button type="submit" className="primary-btn" disabled={saving || !hasAdminAccess}>
+                  <button type="submit" className="primary-btn" disabled={saving}>
                     {saving ? "Saving..." : isEditingActive ? "Update" : "Create"}
                   </button>
                   <button
@@ -685,7 +688,6 @@ function AdminDashboard() {
                                 type="button"
                                 className="table-btn danger"
                                 onClick={() => handleDelete(activeResource, item.id)}
-                                disabled={!hasAdminAccess}
                               >
                                 Delete
                               </button>
