@@ -262,9 +262,10 @@ function TicketPurchase() {
   const [selectedTicketId, setSelectedTicketId] = useState("standard");
   const [selectedSectionId, setSelectedSectionId] = useState("floor-f2");
   const [quantity, setQuantity] = useState(1);
+  const [currentUser] = useState(() => tokenStorage.getUser());
   const [checkout, setCheckout] = useState({
-    name: "",
-    email: "",
+    name: currentUser?.emri || "",
+    email: currentUser?.email || "",
     phone: "",
     cardName: "",
     cardNumber: "",
@@ -274,32 +275,25 @@ function TicketPurchase() {
   const [checkoutStatus, setCheckoutStatus] = useState("idle");
   const [checkoutMessage, setCheckoutMessage] = useState("");
   const [ticketCode, setTicketCode] = useState("");
-  const [currentUser] = useState(() => tokenStorage.getUser());
   const isAdmin = currentUser?.roli === "admin";
 
   useEffect(() => {
-    if (!currentUser) {
-      return;
-    }
-
-    setCheckout((current) => ({
-      ...current,
-      name: current.name || currentUser.emri || "",
-      email: currentUser.email || "",
-    }));
-  }, [currentUser]);
-
-  useEffect(() => {
     if (!id?.startsWith("db-")) {
-      setApiEvent(null);
-      setLoadingEvent(false);
+      Promise.resolve().then(() => {
+        setApiEvent(null);
+        setLoadingEvent(false);
+      });
       return;
     }
 
     let isMounted = true;
     const backendId = id.replace("db-", "");
 
-    setLoadingEvent(true);
+    Promise.resolve().then(() => {
+      if (isMounted) {
+        setLoadingEvent(true);
+      }
+    });
 
     Promise.all([eventsApi.getById(backendId), eventCategoriesApi.getAll()])
       .then(([eventData, categories]) => {

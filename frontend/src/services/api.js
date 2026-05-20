@@ -4,6 +4,8 @@ import { apiUrl } from "../config/api";
 const TOKEN_KEY = "token";
 const USER_KEY = "user";
 let refreshSessionPromise = null;
+let memoryToken = null;
+let memoryUser = null;
 
 // Cache for GET requests with TTL (Time To Live)
 const requestCache = new Map();
@@ -59,10 +61,10 @@ export const clearCache = (pattern) => {
   }
 };
 
-const buildHeaders = (token, hasBody = false) => {
+const buildHeaders = (token, hasBody = false, isFormData = false) => {
   const headers = {};
 
-  if (hasBody) {
+  if (hasBody && !isFormData) {
     headers["Content-Type"] = "application/json";
   }
 
@@ -94,13 +96,16 @@ const request = async (path, options = {}) => {
     }
   }
 
+  const isFormData =
+    typeof FormData !== "undefined" && body instanceof FormData;
+
   try {
     const response = await axios.request({
       url: apiUrl(path),
       method,
       withCredentials: true,
       headers: {
-        ...buildHeaders(token, body !== undefined),
+          ...buildHeaders(token, body !== undefined, isFormData),
         ...headers,
       },
       data: body,
@@ -186,25 +191,26 @@ const refreshAccessToken = async () => {
 
 export const tokenStorage = {
   getToken() {
-    return localStorage.getItem(TOKEN_KEY);
+    return memoryToken;
   },
   setToken(token) {
-    localStorage.setItem(TOKEN_KEY, token);
+    memoryToken = token;
     window.dispatchEvent(new Event("authChanged"));
   },
   removeToken() {
-    localStorage.removeItem(TOKEN_KEY);
+    memoryToken = null;
     window.dispatchEvent(new Event("authChanged"));
   },
   getUser() {
-    const rawUser = localStorage.getItem(USER_KEY);
-    return rawUser ? JSON.parse(rawUser) : null;
+    return memoryUser;
   },
   setUser(user) {
-    localStorage.setItem(USER_KEY, JSON.stringify(user));
+    memoryUser = user;
     window.dispatchEvent(new Event("authChanged"));
   },
   clear() {
+    memoryToken = null;
+    memoryUser = null;
     localStorage.removeItem(TOKEN_KEY);
     localStorage.removeItem(USER_KEY);
     window.dispatchEvent(new Event("authChanged"));

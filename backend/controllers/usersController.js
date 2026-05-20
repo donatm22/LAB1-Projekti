@@ -4,7 +4,7 @@ const { sanitizeUser } = require("./authController");
 const { revokeUserRefreshSessions } = require("../services/sessionService");
 
 const isAdmin = (req) => req.user?.roli === "admin";
-const canAccessUser = (req, userId) => isAdmin(req) || Number(req.user?.id) === Number(userId);
+const canAccessUser = (req, userId) => isAdmin(req) || String(req.user?.id) === String(userId);
 
 const getUsers = (req, res) => {
   db.query(

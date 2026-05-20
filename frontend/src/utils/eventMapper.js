@@ -1,3 +1,5 @@
+import { API_BASE_URL } from "../config/api";
+
 export const formatEventDate = (value) => {
   if (!value) {
     return "Date TBA";
@@ -16,23 +18,40 @@ export const formatEventDate = (value) => {
   });
 };
 
+const parseEventImages = (value) => {
+  if (Array.isArray(value)) {
+    return value;
+  }
+
+  if (typeof value !== "string") {
+    return [];
+  }
+
+  try {
+    const parsed = JSON.parse(value);
+    return Array.isArray(parsed) ? parsed : [value];
+  } catch {
+    return value ? [value] : [];
+  }
+};
+
+const resolveImage = (image) => {
+  if (!image) {
+    return "/profile.svg";
+  }
+
+  if (image.startsWith("/uploads/")) {
+    return `${API_BASE_URL}${image}`;
+  }
+
+  return image;
+};
+
 export const mapApiEventToCard = (event, categories = []) => {
   const category = categories.find(
     (item) => Number(item.id) === Number(event.category_id)
   );
-
-  let primaryImage = event.imazhi;
-
-  if (typeof event.imazhi === "string") {
-    try {
-      const parsedImages = JSON.parse(event.imazhi);
-      if (Array.isArray(parsedImages) && parsedImages.length > 0) {
-        primaryImage = parsedImages[0];
-      }
-    } catch {
-      primaryImage = event.imazhi;
-    }
-  }
+  const [primaryImage] = parseEventImages(event.imazhi);
 
   return {
     id: `db-${event.id}`,
@@ -42,7 +61,7 @@ export const mapApiEventToCard = (event, categories = []) => {
     title: event.titulli,
     location: event.lokacioni,
     date: formatEventDate(event.data_fillimit),
-    image: primaryImage || "/profile.svg",
+    image: resolveImage(primaryImage),
     isFeatured: true,
     description: event.pershkrimi,
   };

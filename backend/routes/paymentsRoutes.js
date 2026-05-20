@@ -11,9 +11,9 @@ const{
 
 const router = express.Router();
 
-router.get("/", getPayments);
+router.get("/", verifyToken, allowRoles("admin", "organizer"), getPayments);
 
-router.get("/:id", getPaymentsById);
+router.get("/:id", verifyToken, allowRoles("admin", "organizer"), getPaymentsById);
 
 router.post("/", verifyToken, allowRoles("admin", "organizer"), createPayment);
 

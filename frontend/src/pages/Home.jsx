@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useState, useRef } from "react";
+import React, { useEffect, useMemo, useState } from "react";
 import { Link } from "react-router-dom";
 import "./Home.css";
 import Navbar from "../components/Navbar";
@@ -53,11 +53,9 @@ const FOOTER_LINKS = {
 };
 
 function Home() {
-  const [activeFilter, setActiveFilter] = useState("Educational Talks");
   const [selectedChips, setSelectedChips] = useState([]);
   const [activeFeaturedIndex, setActiveFeaturedIndex] = useState(0);
   const [apiEvents, setApiEvents] = useState([]);
-  const sliderRef = useRef(null);
 
   useEffect(() => {
     let isMounted = true;
@@ -87,19 +85,8 @@ function Home() {
 
   const allEvents = useMemo(() => apiEvents, [apiEvents]);
 
-  const filteredEvents = allEvents.filter(
-    (event) => event.category === activeFilter
-  );
   const featuredEvents = allEvents.filter((event) => event.isFeatured).slice(0, 4);
   const activeFeaturedEvent = featuredEvents[activeFeaturedIndex] ?? featuredEvents[0];
-
-  const scroll = (direction) => {
-    if (!sliderRef.current) return;
-    sliderRef.current.scrollBy({
-      left: direction === "next" ? 540 : -540,
-      behavior: "smooth",
-    });
-  };
 
   const toggleChip = (chip) => {
     setSelectedChips((prev) =>

@@ -13,6 +13,7 @@ process.on("exit", (code) => {
 
 const express = require("express");
 const cors = require("cors");
+const path = require("path");
 require("./config/env");
 const passport = require("passport");
 const db = require("../database/db");
@@ -43,10 +44,18 @@ require("./config/passport");
 const app = express();
 
 const allowedOrigins = new Set(
-  String(process.env.CORS_ORIGINS || process.env.APP_URL || "http://localhost:5173,http://localhost:5174")
-    .split(",")
-    .map((origin) => origin.trim())
-    .filter(Boolean)
+  [
+    ...(String(process.env.CORS_ORIGINS || "")
+      .split(",")
+      .map((origin) => origin.trim())
+      .filter(Boolean)),
+    ...(String(process.env.APP_URL || "")
+      .split(",")
+      .map((origin) => origin.trim())
+      .filter(Boolean)),
+    "http://localhost:5173",
+    "http://localhost:5174",
+  ]
 );
 
 app.use(
@@ -56,36 +65,19 @@ app.use(
         return callback(null, true);
       }
 
-      return callback(new Error(`CORS blocked for origin: ${origin}`));
+      const error = new Error(`CORS blocked for origin: ${origin}`);
+      error.status = 403;
+      return callback(error);
     },
     credentials: true,
   })
 );
 app.use(express.json());
+app.use("/uploads", express.static(path.join(__dirname, "uploads")));
 app.use(passport.initialize());
 
 app.get("/", (req, res) => {
     res.send("API Funksionon");
-});
-
-app.get("/test-db", (req, res) => {
-  db.query("SELECT 1 AS status", (err, results) => {
-    if (err) {
-      return res.status(500).json({ error: err.message });
-    }
-
-    res.json(results.rows);
-  });
-});
-
-app.get("/tabela", (req, res) => {
-  db.query(
-    "SELECT table_name FROM information_schema.tables WHERE table_schema = 'public' ORDER BY table_name",
-    (err, results) => {
-      if (err) return res.status(500).json({ error: err.message });
-      res.json(results.rows);
-    }
-  );
 });
 
 app.use("/users", usersRoutes);
@@ -112,8 +104,10 @@ app.use("/email", emailRoutes);
 initializeReminderCron();
 
 app.use((err, req, res, next) => {
-  console.error(err.stack);
-  res.status(500).json({ message: "Server error" });
+  console.error(err);
+  const statusCode = err.status || err.statusCode || 500;
+  const message = err.message || "Server error";
+  res.status(statusCode).json({ message, code: err.code });
 });
 
 const PORT = process.env.PORT || 5000;

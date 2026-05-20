@@ -18,6 +18,9 @@ if (connectionString) {
 } else {
   poolConfig.host = process.env.DB_HOST || "localhost";
   poolConfig.user = process.env.DB_USER || "postgres";
+  if (process.env.NODE_ENV === "production" && !process.env.DB_PASSWORD) {
+    throw new Error("DB_PASSWORD must be configured in production");
+  }
   poolConfig.password = process.env.DB_PASSWORD || "postgres";
   poolConfig.database = process.env.DB_DATABASE || "lab1";
   poolConfig.port = process.env.DB_PORT ? Number(process.env.DB_PORT) : 5432;

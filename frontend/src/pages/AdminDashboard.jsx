@@ -302,6 +302,7 @@ function AdminDashboard() {
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState("");
   const [success, setSuccess] = useState("");
+  const [eventImageFiles, setEventImageFiles] = useState([]);
 
   const token = tokenStorage.getToken();
   const currentUser = tokenStorage.getUser();
@@ -315,7 +316,6 @@ function AdminDashboard() {
     });
   }, [isOrganizer]);
 
-  // Check authorization on component mount
   useEffect(() => {
     const isAuthorized = currentUser?.roli === "admin" || currentUser?.roli === "organizer";
     if (!isAuthorized) {
@@ -392,6 +392,11 @@ function AdminDashboard() {
   }, [loadDashboard]);
 
   const handleFormChange = (resource, field, value) => {
+    if (field === "event_files") {
+      setEventImageFiles(Array.from(value || []));
+      return;
+    }
+
     setForms((current) => ({
       ...current,
       [resource]: {
@@ -410,6 +415,7 @@ function AdminDashboard() {
       ...current,
       [resource]: null,
     }));
+    setEventImageFiles([]);
   };
 
   const handleEdit = (resource, item) => {
@@ -483,14 +489,29 @@ function AdminDashboard() {
       }
       
       const payload = normalizePayload(resource, forms[resource], isEditing);
-      // payload prepared and validated
+
+      // If creating/updating events and a file was selected, send multipart FormData
+      let bodyToSend = payload;
+
+      if (resource === "events") {
+        if (eventImageFiles.length > 0) {
+          const fd = new FormData();
+          Object.entries(payload).forEach(([k, v]) => {
+            if (v !== undefined && v !== null) fd.append(k, v);
+          });
+          eventImageFiles.forEach((file) => {
+            fd.append("imazhi", file);
+          });
+          bodyToSend = fd;
+        }
+      }
 
       let savedResponse;
 
       if (isEditing) {
-        savedResponse = await apiMap[resource].update(editingId[resource], payload, token);
+        savedResponse = await apiMap[resource].update(editingId[resource], bodyToSend, token);
       } else {
-        savedResponse = await apiMap[resource].create(payload, token);
+        savedResponse = await apiMap[resource].create(bodyToSend, token);
       }
 
       const savedItem = getSavedItem(resource, savedResponse);
@@ -639,30 +660,59 @@ function AdminDashboard() {
                       >
                         <span>{field.label}</span>
                         {field.type === "textarea" ? (
-                          <textarea
-                            value={value}
-                            onChange={(event) =>
-                              handleFormChange(activeResource, field.name, event.target.value)
-                            }
-                            placeholder={field.placeholder || ""}
-                            required={field.required}
-                            rows="5"
-                          />
+                          <>
+                            <textarea
+                              value={value}
+                              onChange={(event) =>
+                                handleFormChange(activeResource, field.name, event.target.value)
+                              }
+                              placeholder={field.placeholder || ""}
+                              required={field.required}
+                              rows="5"
+                            />
+                            {activeResource === "events" && field.name === "imazhi" ? (
+                              <input
+                                type="file"
+                                accept="image/*"
+                                multiple
+                                onChange={(event) =>
+                                  handleFormChange(activeResource, "event_files", event.target.files)
+                                }
+                              />
+                            ) : null}
+                          </>
                         ) : field.type === "select" ? (
-                          <select
-                            value={value}
-                            onChange={(event) =>
-                              handleFormChange(activeResource, field.name, event.target.value)
-                            }
-                            required={field.required}
-                          >
-                            <option value="">Select {field.label.toLowerCase()}</option>
-                            {options.map((option) => (
-                              <option key={option.value} value={option.value}>
-                                {option.label}
-                              </option>
-                            ))}
-                          </select>
+                          field.name === "imazhi" ? (
+                            <div className="upload-field">
+                              <span className="upload-field-label">Upload image</span>
+                              <input
+                                type="file"
+                                accept="image/*"
+                                multiple
+                                onChange={(e) => {
+                                  handleFormChange(activeResource, "event_files", e.target.files);
+                                }}
+                              />
+                              {forms[activeResource].imazhi ? (
+                                <div className="upload-preview">{forms[activeResource].imazhi}</div>
+                              ) : null}
+                            </div>
+                          ) : (
+                            <select
+                              value={value}
+                              onChange={(event) =>
+                                handleFormChange(activeResource, field.name, event.target.value)
+                              }
+                              required={field.required}
+                            >
+                              <option value="">Select {field.label.toLowerCase()}</option>
+                              {options.map((option) => (
+                                <option key={option.value} value={option.value}>
+                                  {option.label}
+                                </option>
+                              ))}
+                            </select>
+                          )
                         ) : (
                           <input
                             type={field.type}

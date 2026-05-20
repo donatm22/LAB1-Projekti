@@ -5,6 +5,14 @@ const db = require('../../database/db');
 
 const router = express.Router();
 
+const escapeHtml = (value) =>
+  String(value ?? '')
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#39;');
+
 /**
  * Test endpoint: Send a welcome email to the current logged-in user
  * GET /email/send-welcome
@@ -34,7 +42,7 @@ router.get('/send-welcome', verifyToken, async (req, res) => {
           user.email,
           'Welcome to Event Management Platform!',
           `
-            <p>Hello <strong>${user.emri}</strong>,</p>
+            <p>Hello <strong>${escapeHtml(user.emri)}</strong>,</p>
             <p>Congrats on joining our <strong>Event Management Platform</strong>!</p>
             <p>You can now:</p>
             <ul>
@@ -101,17 +109,17 @@ router.post('/send-booking-confirmation', verifyToken, async (req, res) => {
         // Send confirmation email
         const emailResponse = await sendEmailToUser(
           user.email,
-          `Booking Confirmation - ${eventName}`,
+          `Booking Confirmation - ${String(eventName).replace(/[\r\n]/g, ' ')}`,
           `
             <h2>Booking Confirmation</h2>
-            <p>Hi <strong>${user.emri}</strong>,</p>
+            <p>Hi <strong>${escapeHtml(user.emri)}</strong>,</p>
             <p>Thank you for booking with us! Your registration has been confirmed.</p>
             
             <h3>Event Details</h3>
             <ul>
-              <li><strong>Event:</strong> ${eventName}</li>
-              <li><strong>Date:</strong> ${eventDate}</li>
-              <li><strong>Location:</strong> ${eventLocation}</li>
+              <li><strong>Event:</strong> ${escapeHtml(eventName)}</li>
+              <li><strong>Date:</strong> ${escapeHtml(eventDate)}</li>
+              <li><strong>Location:</strong> ${escapeHtml(eventLocation)}</li>
             </ul>
             
             <p>We're excited to see you there!</p>
@@ -182,25 +190,25 @@ router.post('/send-ticket-purchase', verifyToken, async (req, res) => {
 
         const emailResponse = await sendEmailToUser(
           user.email,
-          `Ticket Confirmation - ${eventTitle}`,
+          `Ticket Confirmation - ${String(eventTitle).replace(/[\r\n]/g, ' ')}`,
           `
             <h2>Hello World</h2>
             <p>Congrats on sending your <strong>first email</strong> with Resend!</p>
-            <p>Hi <strong>${user.emri}</strong>, your ticket purchase is confirmed.</p>
+            <p>Hi <strong>${escapeHtml(user.emri)}</strong>, your ticket purchase is confirmed.</p>
             <h3>Ticket details</h3>
             <ul>
-              <li><strong>Ticket code:</strong> ${ticketCode}</li>
-              <li><strong>Event:</strong> ${eventTitle}</li>
-              <li><strong>Speaker/Artist:</strong> ${eventSpeaker || 'TBA'}</li>
-              <li><strong>Location:</strong> ${eventLocation || 'TBA'}</li>
-              <li><strong>Date:</strong> ${eventDate}</li>
-              <li><strong>Ticket type:</strong> ${ticketType}</li>
-              <li><strong>Section:</strong> ${ticketSection || 'General Admission'}</li>
-              <li><strong>Quantity:</strong> ${ticketQuantity}</li>
-              <li><strong>Total paid:</strong> ${orderTotal}</li>
-              <li><strong>Phone:</strong> ${buyerPhone || 'Not provided'}</li>
+              <li><strong>Ticket code:</strong> ${escapeHtml(ticketCode)}</li>
+              <li><strong>Event:</strong> ${escapeHtml(eventTitle)}</li>
+              <li><strong>Speaker/Artist:</strong> ${escapeHtml(eventSpeaker || 'TBA')}</li>
+              <li><strong>Location:</strong> ${escapeHtml(eventLocation || 'TBA')}</li>
+              <li><strong>Date:</strong> ${escapeHtml(eventDate)}</li>
+              <li><strong>Ticket type:</strong> ${escapeHtml(ticketType)}</li>
+              <li><strong>Section:</strong> ${escapeHtml(ticketSection || 'General Admission')}</li>
+              <li><strong>Quantity:</strong> ${escapeHtml(ticketQuantity)}</li>
+              <li><strong>Total paid:</strong> ${escapeHtml(orderTotal)}</li>
+              <li><strong>Phone:</strong> ${escapeHtml(buyerPhone || 'Not provided')}</li>
             </ul>
-            <p>We have sent this confirmation to your logged-in account email: <strong>${user.email}</strong>.</p>
+            <p>We have sent this confirmation to your logged-in account email: <strong>${escapeHtml(user.email)}</strong>.</p>
           `
         );
 

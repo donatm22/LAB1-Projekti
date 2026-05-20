@@ -31,7 +31,7 @@ function Navbar() {
     } else {
       setSearchValue("");
     }
-  }, [location.pathname]);
+  }, [location.pathname, searchParams]);
 
   useEffect(() => {
     // Update search value when search params change (for real-time updates on events page)

@@ -5,7 +5,16 @@ require("../config/env");
 
 const ACCESS_TOKEN_SECRET = process.env.JWT_SECRET;
 const REFRESH_TOKEN_SECRET =
-  process.env.REFRESH_TOKEN_SECRET || `${process.env.JWT_SECRET || "change-me"}-refresh`;
+  process.env.REFRESH_TOKEN_SECRET ||
+  (process.env.NODE_ENV === "production" ? "" : `${process.env.JWT_SECRET || "change-me"}-refresh`);
+
+if (process.env.NODE_ENV === "production" && !ACCESS_TOKEN_SECRET) {
+  throw new Error("JWT_SECRET must be configured in production");
+}
+
+if (process.env.NODE_ENV === "production" && !REFRESH_TOKEN_SECRET) {
+  throw new Error("REFRESH_TOKEN_SECRET must be configured in production");
+}
 
 const ACCESS_TOKEN_EXPIRES_IN = process.env.JWT_EXPIRES_IN || "15m";
 const REFRESH_TOKEN_EXPIRES_IN = process.env.REFRESH_TOKEN_EXPIRES_IN || "7d";

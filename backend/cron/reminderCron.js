@@ -26,8 +26,8 @@ const initializeReminderCron = () => {
           r.reminder_sent,
           u.emri as user_name,
           u.email as user_email,
-          e.emri as event_name,
-          e.data_nisjes as event_date,
+          e.titulli as event_name,
+          e.data_fillimit as event_date,
           e.lokacioni as event_location
         FROM "Registrations" r
         JOIN "Users" u ON r.user_id = u.id
@@ -35,9 +35,9 @@ const initializeReminderCron = () => {
         WHERE 
           r.reminder_sent = false
           AND r.statusi IN ('pending', 'confirmed', 'completed')
-          AND e.data_nisjes > NOW()
-          AND e.data_nisjes < NOW() + INTERVAL '24 hours'
-        ORDER BY e.data_nisjes ASC
+          AND e.data_fillimit > NOW()
+          AND e.data_fillimit < NOW() + INTERVAL '24 hours'
+        ORDER BY e.data_fillimit ASC
       `;
 
       db.query(query, async (err, results) => {

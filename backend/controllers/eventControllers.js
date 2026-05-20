@@ -3,7 +3,7 @@ const db = require("../../database/db");
 const parseEventImages = (value) => {
     if (Array.isArray(value)) {
         return value
-            .map((item) => String(item || "").trim())
+            .flatMap((item) => parseEventImages(item))
             .filter(Boolean);
     }
 
@@ -24,8 +24,8 @@ const parseEventImages = (value) => {
                 .map((item) => String(item || "").trim())
                 .filter(Boolean);
         }
-    } catch (error) {
-        // Fall through to text parsing.
+    } catch {
+        // Plain text input is supported below.
     }
 
     return trimmed
@@ -34,16 +34,35 @@ const parseEventImages = (value) => {
         .filter(Boolean);
 };
 
-const serializeEventImages = (value) => {
-    const images = parseEventImages(value);
+const serializeEventImages = (images) => {
+    const uniqueImages = [...new Set(images.filter(Boolean))];
 
-    if (images.length > 10) {
+    if (uniqueImages.length > 10) {
         const error = new Error("You can add up to 10 photos for an event");
         error.statusCode = 400;
         throw error;
     }
 
-    return images.length > 0 ? JSON.stringify(images) : null;
+    return uniqueImages.length > 0 ? JSON.stringify(uniqueImages) : null;
+};
+
+const getUploadedImages = (req) => {
+    const files = Array.isArray(req.files) ? req.files : req.file ? [req.file] : [];
+    return files.map((file) => `/uploads/events/${file.filename}`);
+};
+
+const isAdmin = (req) => req.user?.roli === "admin";
+const isOrganizer = (req) => req.user?.roli === "organizer";
+
+const buildEventImages = (req, fallbackImageValue = null) => {
+    const uploadedImages = getUploadedImages(req);
+    const bodyImages = parseEventImages(req.body.imazhi);
+
+    if (uploadedImages.length > 0 || bodyImages.length > 0) {
+        return serializeEventImages([...bodyImages, ...uploadedImages]);
+    }
+
+    return fallbackImageValue;
 };
 
 const getEvents = (req, res) => {
@@ -91,7 +110,7 @@ const getEventById = (req, res) => {
 };
 
 const createEvent = (req, res) =>{
-    const {titulli, pershkrimi, data_fillimit, data_perfundimit, lokacioni, kapaciteti, statusi , organizer_id, category_id, imazhi} = req.body;
+    const {titulli, pershkrimi, data_fillimit, data_perfundimit, lokacioni, kapaciteti, statusi , organizer_id, category_id} = req.body;
 
     if(!titulli || !pershkrimi || !data_fillimit || !data_perfundimit || !lokacioni || !kapaciteti || !statusi || !organizer_id || !category_id){
         return res.status(400).json({
@@ -99,7 +118,7 @@ const createEvent = (req, res) =>{
         });
     }
 
-    const creatorId = req.user && req.user.id ? req.user.id : null;
+    const creatorId = isAdmin(req) && req.body.owner_user_id ? req.body.owner_user_id : req.user?.id;
 
     db.query('SELECT id FROM "Organizers" WHERE id = $1', [organizer_id], (orgErr, orgRes) => {
         if (orgErr) {
@@ -119,17 +138,17 @@ const createEvent = (req, res) =>{
                 return res.status(400).json({ message: "Category not found" });
             }
 
-            let serializedImages;
+            let imageValue;
 
             try {
-                serializedImages = serializeEventImages(imazhi);
+                imageValue = buildEventImages(req);
             } catch (error) {
                 return res.status(error.statusCode || 500).json({ message: error.message });
             }
 
             const sql =
             'INSERT INTO "Events" (titulli, pershkrimi, data_fillimit, data_perfundimit, lokacioni, kapaciteti, statusi, organizer_id, organizer_entity_id, category_id, imazhi) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11) RETURNING *';
-            const values = [titulli, pershkrimi, data_fillimit, data_perfundimit, lokacioni, kapaciteti, statusi, creatorId, organizer_id, category_id, serializedImages];
+            const values = [titulli, pershkrimi, data_fillimit, data_perfundimit, lokacioni, kapaciteti, statusi, creatorId, organizer_id, category_id, imageValue];
 
             db.query(sql, values, (err, result) => {
                 if (err){
@@ -148,7 +167,7 @@ const createEvent = (req, res) =>{
 };
 
 const updateEvent = (req, res) =>{
-    const {titulli, pershkrimi, data_fillimit, data_perfundimit, lokacioni, kapaciteti, statusi , organizer_id, category_id, imazhi} = req.body;
+    const {titulli, pershkrimi, data_fillimit, data_perfundimit, lokacioni, kapaciteti, statusi , organizer_id, category_id} = req.body;
     const {id} = req.params;
 
     if(!titulli || !pershkrimi || !data_fillimit || !data_perfundimit || !lokacioni || !kapaciteti || !statusi || !organizer_id || !category_id){
@@ -157,7 +176,7 @@ const updateEvent = (req, res) =>{
         });
     }
 
-    const creatorId = req.user && req.user.id ? req.user.id : null;
+    const creatorId = isAdmin(req) && req.body.owner_user_id ? req.body.owner_user_id : req.user?.id;
 
     db.query('SELECT id FROM "Organizers" WHERE id = $1', [organizer_id], (orgErr, orgRes) => {
         if (orgErr) {
@@ -168,7 +187,6 @@ const updateEvent = (req, res) =>{
             return res.status(400).json({ message: "Organizer not found" });
         }
 
-        // Validate category exists
         db.query('SELECT id FROM "EventCategories" WHERE id = $1', [category_id], (catErr, catRes) => {
             if (catErr) {
                 return res.status(500).json({ error: catErr.message });
@@ -178,33 +196,49 @@ const updateEvent = (req, res) =>{
                 return res.status(400).json({ message: "Category not found" });
             }
 
-            let serializedImages;
-
-            try {
-                serializedImages = serializeEventImages(imazhi);
-            } catch (error) {
-                return res.status(error.statusCode || 500).json({ message: error.message });
-            }
-
-            const sql =
-            'UPDATE "Events" SET titulli = $1, pershkrimi = $2, data_fillimit = $3, data_perfundimit = $4, lokacioni = $5, kapaciteti = $6, statusi = $7, organizer_id = $8, organizer_entity_id = $9, category_id = $10, imazhi = $11 WHERE id = $12 RETURNING *'; 
-            const values = [titulli, pershkrimi, data_fillimit, data_perfundimit, lokacioni, kapaciteti, statusi, creatorId, organizer_id, category_id, serializedImages, id];
-
-            db.query(sql, values, (err, result) => {
-                if (err){
-                    return res.status(500).json({
-                        error: err.message
-                    });
+            db.query('SELECT imazhi, organizer_id FROM "Events" WHERE id = $1', [id], (eventErr, eventRes) => {
+                if (eventErr) {
+                    return res.status(500).json({ error: eventErr.message });
                 }
-                if(result.rowCount === 0){
+
+                if (eventRes.rows.length === 0) {
                     return res.status(404).json({
-                        message: "Eventi nuk eshte perditesuar"
+                        message: "Eventi nuk u gjet"
                     });
                 }
 
-                res.status(200).json({
-                    message: "Eventi u perditesua me sukses",
-                    event: result.rows[0]
+                if (isOrganizer(req) && String(eventRes.rows[0].organizer_id) !== String(req.user.id)) {
+                    return res.status(403).json({ message: "Access denied" });
+                }
+
+                let imageValue;
+
+                try {
+                    imageValue = buildEventImages(req, eventRes.rows[0].imazhi || null);
+                } catch (error) {
+                    return res.status(error.statusCode || 500).json({ message: error.message });
+                }
+
+                const sql =
+                'UPDATE "Events" SET titulli = $1, pershkrimi = $2, data_fillimit = $3, data_perfundimit = $4, lokacioni = $5, kapaciteti = $6, statusi = $7, organizer_id = $8, organizer_entity_id = $9, category_id = $10, imazhi = $11 WHERE id = $12 RETURNING *';
+                const values = [titulli, pershkrimi, data_fillimit, data_perfundimit, lokacioni, kapaciteti, statusi, creatorId, organizer_id, category_id, imageValue, id];
+
+                db.query(sql, values, (err, result) => {
+                    if (err){
+                        return res.status(500).json({
+                            error: err.message
+                        });
+                    }
+                    if(result.rowCount === 0){
+                        return res.status(404).json({
+                            message: "Eventi nuk eshte perditesuar"
+                        });
+                    }
+
+                    res.status(200).json({
+                        message: "Eventi u perditesua me sukses",
+                        event: result.rows[0]
+                    });
                 });
             });
         });
