@@ -31,7 +31,7 @@ const getEventById = (req, res) => {
 const createEvent = (req, res) =>{
     const {titulli, pershkrimi, data_fillimit, data_perfundimit, lokacioni, kapaciteti, statusi , organizer_id, category_id, imazhi} = req.body;
 
-    if(!titulli || !pershkrimi || !data_fillimit || !data_perfundimit || !lokacioni || !kapaciteti || !statusi || !organizer_id || !category_id || !imazhi){
+    if(!titulli || !pershkrimi || !data_fillimit || !data_perfundimit || !lokacioni || !kapaciteti || !statusi || !organizer_id || !category_id){
         return res.status(400).json({
             message: "Vlerat jane te zbrazeta!"
         });
@@ -39,7 +39,7 @@ const createEvent = (req, res) =>{
 
     const sql =
     'INSERT INTO "Events" (titulli, pershkrimi, data_fillimit, data_perfundimit, lokacioni, kapaciteti, statusi , organizer_id, category_id, imazhi) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10) RETURNING *';
-    const values = [titulli, pershkrimi, data_fillimit, data_perfundimit, lokacioni, kapaciteti, statusi , organizer_id, category_id, imazhi];
+    const values = [titulli, pershkrimi, data_fillimit, data_perfundimit, lokacioni, kapaciteti, statusi , organizer_id, category_id, imazhi || null];
 
     db.query(sql, values, (err, result) => {
         if (err){

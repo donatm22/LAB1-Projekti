@@ -29,13 +29,13 @@ const getSpeakersById = (req, res) => {
 };
 
 const createSpeakers = (req, res) => {
-    const { emri, bio } = req.body;
-    if (!emri || !bio) {
+    const { emri } = req.body;
+    if (!emri) {
         return res.status(400).json({
-            message: "Te dhenat nuk jane vendosur"
+            message: "Emri eshte i detyrueshem"
         })
     }
-    db.query('INSERT INTO "Speakers" (emri, bio) VALUES ($1, $2) RETURNING *', [emri, bio], (err, result) => {
+    db.query('INSERT INTO "Speakers" (emri) VALUES ($1) RETURNING *', [emri], (err, result) => {
         if (err) {
             return res.status(500).json({
                 error: err.message
@@ -55,16 +55,16 @@ const createSpeakers = (req, res) => {
 
 const updateSpeakers = (req, res) => {
     const { id } = req.params;
-    const { emri, bio } = req.body;
+    const { emri } = req.body;
 
-    if (!emri || !bio) {
+    if (!emri) {
         return res.status(400).json({
-            message: "Te dhenat nuk jane vendosur"
+            message: "Emri eshte i detyrueshem"
         });
     }
 
-    db.query('UPDATE "Speakers" SET emri = $1, bio = $2 WHERE id = $3 RETURNING *',
-        [emri, bio, id],
+    db.query('UPDATE "Speakers" SET emri = $1 WHERE id = $2 RETURNING *',
+        [emri, id],
         (err, result) => {
             if (err) {
                 return res.status(500).json({
@@ -76,7 +76,7 @@ const updateSpeakers = (req, res) => {
                     message:"Speaker nuk u gjet"
                 });
             }
-            res.json({
+            res.status(200).json({
                 message:"Speaker-i u perditesua me sukses",
                 speaker: result.rows[0]
             });

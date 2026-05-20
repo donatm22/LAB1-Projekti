@@ -4,12 +4,10 @@ const router = express.Router();
 
 const OPENROUTER_CHAT_URL = "https://openrouter.ai/api/v1/chat/completions";
 const DEFAULT_MODELS = [
-  "inclusionai/ring-2.6-1t:free",
   "google/gemma-4-26b-a4b-it:free",
-  "google/gemma-4-31b-it:free",
   "meta-llama/llama-3.2-3b-instruct:free",
+  "google/gemini-2.0-flash-lite-preview-02-05:free",
   "qwen/qwen3-next-80b-a3b-instruct:free",
-  "qwen/qwen3-coder:free",
 ];
 const MAX_MESSAGES = 12;
 const MAX_CONTENT_LENGTH = 1200;

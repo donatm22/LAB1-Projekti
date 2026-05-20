@@ -29,13 +29,13 @@ const getEventCategoriesById = (req, res) =>{
 };
 
 const createEventCategories = (req, res) =>{
-    const {emri, pershkrimi} = req.body;
-    if(!emri || !pershkrimi){
+    const {emri} = req.body;
+    if(!emri){
         return res.status(400).json({
-            message: "Emri dhe pershkrimi nuk jane plotesuar!"
+            message: "Emri nuk eshte plotesuar!"
         });
     }
-    db.query('INSERT INTO "EventCategories" (emri, pershkrimi) VALUES ($1, $2) RETURNING *', [emri, pershkrimi], (err, result) =>{
+    db.query('INSERT INTO "EventCategories" (emri) VALUES ($1) RETURNING *', [emri], (err, result) =>{
         if(err){
             return res.status(500).json({
                 error: err.message
@@ -50,13 +50,13 @@ const createEventCategories = (req, res) =>{
 
 const updateEventCategories = (req, res) =>{
     const { id } = req.params;
-    const {emri, pershkrimi} = req.body;
-    if(!emri || !pershkrimi){
+    const {emri} = req.body;
+    if(!emri){
         return res.status(400).json({
-            message: "Emri dhe pershkrimi jane te detyrueshem!"
+            message: "Emri eshte i detyrueshem!"
         });
     }
-    db.query('UPDATE "EventCategories" SET emri = $1, pershkrimi = $2 WHERE id = $3 RETURNING *', [emri, pershkrimi, id], (err, result) =>{
+    db.query('UPDATE "EventCategories" SET emri = $1 WHERE id = $2 RETURNING *', [emri, id], (err, result) =>{
         if(err){
             return res.status(500).json({
                 error: err.message

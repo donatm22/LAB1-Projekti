@@ -664,7 +664,7 @@ function TicketPurchase() {
                     name="name"
                     value={checkout.name}
                     onChange={handleCheckoutChange}
-                    placeholder="Ariana Krasniqi"
+                    placeholder="Filan Fisteku"
                     required
                   />
                 </label>
@@ -700,7 +700,7 @@ function TicketPurchase() {
                     name="cardName"
                     value={checkout.cardName}
                     onChange={handleCheckoutChange}
-                    placeholder="Ariana Krasniqi"
+                    placeholder="Filan Fisteku"
                     required
                   />
                 </label>

@@ -66,7 +66,6 @@ const EMPTY_FORMS = {
   },
   speakers: {
     emri: "",
-    bio: "",
   },
   tickets: {
     event_id: "",
@@ -82,7 +81,6 @@ const EMPTY_FORMS = {
   },
   categories: {
     emri: "",
-    pershkrimi: "",
   },
   organizers: {
     emri_organizates: "",
@@ -108,7 +106,6 @@ const FIELD_CONFIG = {
   ],
   speakers: [
     { name: "emri", label: "Name", type: "text", required: true },
-    { name: "bio", label: "Bio", type: "textarea", required: true },
   ],
   tickets: [
     { name: "event_id", label: "Event", type: "select", required: true },
@@ -124,7 +121,6 @@ const FIELD_CONFIG = {
   ],
   categories: [
     { name: "emri", label: "Name", type: "text", required: true },
-    { name: "pershkrimi", label: "Description", type: "textarea", required: true },
   ],
   organizers: [
     { name: "emri_organizates", label: "Organization", type: "text", required: false },
@@ -137,10 +133,10 @@ const FIELD_CONFIG = {
 
 const TABLE_COLUMNS = {
   events: ["id", "titulli", "lokacioni", "statusi", "kapaciteti", "organizer_id", "category_id"],
-  speakers: ["id", "emri", "bio"],
+  speakers: ["id", "emri"],
   tickets: ["id", "event_id", "tipi", "cmimi", "sasia"],
   users: ["id", "emri", "email", "roli"],
-  categories: ["id", "emri", "pershkrimi"],
+  categories: ["id", "emri"],
   organizers: ["id", "emri_organizates", "email", "telefoni", "website"],
 };
 
@@ -202,6 +198,10 @@ const normalizePayload = (resource, values, isEditing) => {
     payload.event_id = Number(payload.event_id);
     payload.cmimi = Number(payload.cmimi);
     payload.sasia = Number(payload.sasia);
+  }
+
+  if (resource === "speakers") {
+    delete payload.bio;
   }
 
   if (resource === "users" && isEditing && !payload.password) {
