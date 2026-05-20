@@ -1,6 +1,7 @@
 const bcrypt = require("bcryptjs");
 const db = require("../../database/db");
 const { sanitizeUser } = require("./authController");
+const { revokeUserRefreshSessions } = require("../services/sessionService");
 
 const isAdmin = (req) => req.user?.roli === "admin";
 const canAccessUser = (req, userId) => isAdmin(req) || Number(req.user?.id) === Number(userId);
@@ -99,13 +100,21 @@ const updateUser = (req, res) => {
     db.query(
       'UPDATE "Users" SET emri = $1, email = $2, password = $3, roli = $4 WHERE id = $5 RETURNING *',
       [emri, email, nextPassword, nextRole, id],
-      (updateErr, updateResult) => {
+      async (updateErr, updateResult) => {
         if (updateErr) {
           if (updateErr.code === "23505") {
             return res.status(409).json({ message: "Email already exists" });
           }
 
           return res.status(500).json({ error: updateErr.message });
+        }
+
+        try {
+          if (password) {
+            await revokeUserRefreshSessions(id);
+          }
+        } catch (sessionError) {
+          console.error("Failed to revoke user refresh sessions:", sessionError.message);
         }
 
         return res.json({

@@ -3,6 +3,7 @@ import { apiUrl } from "../config/api";
 
 const TOKEN_KEY = "token";
 const USER_KEY = "user";
+let refreshSessionPromise = null;
 
 const buildHeaders = (token, hasBody = false) => {
   const headers = {};
@@ -24,11 +25,14 @@ const request = async (path, options = {}) => {
     body,
     token,
     headers = {},
+    retryOn401 = true,
+    skipAuthRefresh = false,
   } = options;
 
   const response = await axios.request({
     url: apiUrl(path),
     method,
+    withCredentials: true,
     headers: {
       ...buildHeaders(token, body !== undefined),
       ...headers,
@@ -39,6 +43,26 @@ const request = async (path, options = {}) => {
 
   if (response.status < 200 || response.status >= 300) {
     const data = response.data;
+
+    if (
+      response.status === 401 &&
+      retryOn401 &&
+      !skipAuthRefresh &&
+      !path.startsWith("/auth/")
+    ) {
+      try {
+        await refreshAccessToken();
+        return request(path, {
+          ...options,
+          retryOn401: false,
+          token: tokenStorage.getToken(),
+        });
+      } catch (refreshError) {
+        tokenStorage.clear();
+        throw refreshError;
+      }
+    }
+
     const error = new Error(
       data?.message || data?.error || "Request failed"
     );
@@ -48,6 +72,36 @@ const request = async (path, options = {}) => {
   }
 
   return response.data;
+};
+
+const refreshAccessToken = async () => {
+  if (!refreshSessionPromise) {
+    refreshSessionPromise = request("/auth/refresh", {
+      method: "POST",
+      retryOn401: false,
+      skipAuthRefresh: true,
+    })
+      .then((data) => {
+        if (data?.token) {
+          tokenStorage.setToken(data.token);
+        }
+
+        if (data?.user) {
+          tokenStorage.setUser(data.user);
+        }
+
+        return data;
+      })
+      .catch((error) => {
+        tokenStorage.clear();
+        throw error;
+      })
+      .finally(() => {
+        refreshSessionPromise = null;
+      });
+  }
+
+  return refreshSessionPromise;
 };
 
 export const tokenStorage = {
@@ -82,6 +136,13 @@ export const authApi = {
     return request("/auth/login", {
       method: "POST",
       body: credentials,
+    });
+  },
+  refresh() {
+    return request("/auth/refresh", {
+      method: "POST",
+      retryOn401: false,
+      skipAuthRefresh: true,
     });
   },
   me(token = tokenStorage.getToken()) {

@@ -40,7 +40,25 @@ require("./config/passport");
 
 const app = express();
 
-app.use(cors());
+const allowedOrigins = new Set(
+  String(process.env.CORS_ORIGINS || process.env.APP_URL || "http://localhost:5173,http://localhost:5174")
+    .split(",")
+    .map((origin) => origin.trim())
+    .filter(Boolean)
+);
+
+app.use(
+  cors({
+    origin(origin, callback) {
+      if (!origin || allowedOrigins.has(origin)) {
+        return callback(null, true);
+      }
+
+      return callback(new Error(`CORS blocked for origin: ${origin}`));
+    },
+    credentials: true,
+  })
+);
 app.use(express.json());
 app.use(passport.initialize());
 
