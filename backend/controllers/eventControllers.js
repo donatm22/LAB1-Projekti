@@ -37,20 +37,42 @@ const createEvent = (req, res) =>{
         });
     }
 
-    const sql =
-    'INSERT INTO "Events" (titulli, pershkrimi, data_fillimit, data_perfundimit, lokacioni, kapaciteti, statusi , organizer_id, category_id, imazhi) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10) RETURNING *';
-    const values = [titulli, pershkrimi, data_fillimit, data_perfundimit, lokacioni, kapaciteti, statusi , organizer_id, category_id, imazhi || null];
+    const creatorId = req.user && req.user.id ? req.user.id : null;
 
-    db.query(sql, values, (err, result) => {
-        if (err){
-            return res.status(500).json({
-                error: err.message
-            });
+    db.query('SELECT id FROM "Organizers" WHERE id = $1', [organizer_id], (orgErr, orgRes) => {
+        if (orgErr) {
+            return res.status(500).json({ error: orgErr.message });
         }
 
-        res.status(201).json({
-            message: "Eventi u shtua me sukses",
-            event: result.rows[0]
+        if (orgRes.rows.length === 0) {
+            return res.status(400).json({ message: "Organizer not found" });
+        }
+
+        db.query('SELECT id FROM "EventCategories" WHERE id = $1', [category_id], (catErr, catRes) => {
+            if (catErr) {
+                return res.status(500).json({ error: catErr.message });
+            }
+
+            if (catRes.rows.length === 0) {
+                return res.status(400).json({ message: "Category not found" });
+            }
+
+            const sql =
+            'INSERT INTO "Events" (titulli, pershkrimi, data_fillimit, data_perfundimit, lokacioni, kapaciteti, statusi, organizer_id, organizer_entity_id, category_id, imazhi) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11) RETURNING *';
+            const values = [titulli, pershkrimi, data_fillimit, data_perfundimit, lokacioni, kapaciteti, statusi, creatorId, organizer_id, category_id, imazhi || null];
+
+            db.query(sql, values, (err, result) => {
+                if (err){
+                    return res.status(500).json({
+                        error: err.message
+                    });
+                }
+
+                res.status(201).json({
+                    message: "Eventi u shtua me sukses",
+                    event: result.rows[0]
+                });
+            });
         });
     });
 };
@@ -65,25 +87,48 @@ const updateEvent = (req, res) =>{
         });
     }
 
-    const sql =
-    'UPDATE "Events" SET titulli = $1, pershkrimi = $2, data_fillimit = $3, data_perfundimit = $4, lokacioni = $5, kapaciteti = $6, statusi = $7 , organizer_id = $8, category_id = $9, imazhi = $10 WHERE id = $11'; 
-    const values = [titulli, pershkrimi, data_fillimit, data_perfundimit, lokacioni, kapaciteti, statusi , organizer_id, category_id, imazhi, id];
+    const creatorId = req.user && req.user.id ? req.user.id : null;
 
-    db.query(sql, values, (err, result) => {
-        if (err){
-            return res.status(500).json({
-                error: err.message
-            });
-        }
-        if(result.rowCount === 0){
-            return res.status(404).json({
-                message: "Eventi nuk eshte perditesuar"
-            });
+    db.query('SELECT id FROM "Organizers" WHERE id = $1', [organizer_id], (orgErr, orgRes) => {
+        if (orgErr) {
+            return res.status(500).json({ error: orgErr.message });
         }
 
-        res.status(200).json({
-            message: "Eventi u perditesua me sukses",
-            event: result.rows[0]
+        if (orgRes.rows.length === 0) {
+            return res.status(400).json({ message: "Organizer not found" });
+        }
+
+        // Validate category exists
+        db.query('SELECT id FROM "EventCategories" WHERE id = $1', [category_id], (catErr, catRes) => {
+            if (catErr) {
+                return res.status(500).json({ error: catErr.message });
+            }
+
+            if (catRes.rows.length === 0) {
+                return res.status(400).json({ message: "Category not found" });
+            }
+
+            const sql =
+            'UPDATE "Events" SET titulli = $1, pershkrimi = $2, data_fillimit = $3, data_perfundimit = $4, lokacioni = $5, kapaciteti = $6, statusi = $7, organizer_id = $8, organizer_entity_id = $9, category_id = $10, imazhi = $11 WHERE id = $12'; 
+            const values = [titulli, pershkrimi, data_fillimit, data_perfundimit, lokacioni, kapaciteti, statusi, creatorId, organizer_id, category_id, imazhi, id];
+
+            db.query(sql, values, (err, result) => {
+                if (err){
+                    return res.status(500).json({
+                        error: err.message
+                    });
+                }
+                if(result.rowCount === 0){
+                    return res.status(404).json({
+                        message: "Eventi nuk eshte perditesuar"
+                    });
+                }
+
+                res.status(200).json({
+                    message: "Eventi u perditesua me sukses",
+                    event: result.rows[0]
+                });
+            });
         });
     });
 };

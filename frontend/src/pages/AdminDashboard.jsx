@@ -191,8 +191,13 @@ const normalizePayload = (resource, values, isEditing) => {
 
   if (resource === "events") {
     payload.kapaciteti = Number(payload.kapaciteti);
-    payload.organizer_id = Number(payload.organizer_id);
-    payload.category_id = Number(payload.category_id);
+    const toNumberIfNumeric = (v) => {
+      if (v === null || v === undefined || v === "") return v;
+      const s = String(v).trim();
+      return /^-?\d+$/.test(s) ? Number(s) : v;
+    };
+    payload.organizer_id = toNumberIfNumeric(payload.organizer_id);
+    payload.category_id = toNumberIfNumeric(payload.category_id);
   }
 
   if (resource === "tickets") {
@@ -426,7 +431,34 @@ function AdminDashboard() {
 
     try {
       const isEditing = Boolean(editingId[resource]);
+      
+      const formValues = forms[resource];
+      const activeFields = FIELD_CONFIG[resource] || [];
+      const emptyFields = [];
+      
+      for (const field of activeFields) {
+        if (field.required) {
+          const value = formValues[field.name];
+          if (
+            value === null ||
+            value === undefined ||
+            (typeof value === "string" && value.trim() === "") ||
+            (typeof value === "number" && value === 0 && field.type !== "number")
+          ) {
+            emptyFields.push(field.label);
+          }
+        }
+      }
+      
+      if (emptyFields.length > 0) {
+        setSaving(false);
+        setError(`Please fill in all required fields: ${emptyFields.join(", ")}`);
+        return;
+      }
+      
       const payload = normalizePayload(resource, forms[resource], isEditing);
+      // payload prepared and validated
+
       let savedResponse;
 
       if (isEditing) {
@@ -465,7 +497,8 @@ function AdminDashboard() {
         `${RESOURCE_CONFIG[resource].label} ${isEditing ? "updated" : "created"} successfully.`
       );
     } catch (submitError) {
-      setError(submitError.message || "Failed to save changes.");
+      const backendInfo = submitError?.data ? ` (${JSON.stringify(submitError.data)})` : "";
+      setError((submitError.message || "Failed to save changes.") + backendInfo);
     } finally {
       setSaving(false);
     }
