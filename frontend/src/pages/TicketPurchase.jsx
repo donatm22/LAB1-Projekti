@@ -1,8 +1,8 @@
 import { useEffect, useMemo, useState } from "react";
-import emailjs from "@emailjs/browser";
 import { Link, useParams } from "react-router-dom";
 import Navbar from "../components/Navbar";
-import { eventCategoriesApi, eventsApi } from "../services/api";
+import { eventCategoriesApi, eventsApi, tokenStorage } from "../services/api";
+import { sendEmail } from "../services/emailService";
 import { mapApiEventToCard } from "../utils/eventMapper";
 import "./TicketPurchase.css";
 
@@ -275,6 +275,8 @@ function TicketPurchase() {
   const [checkoutStatus, setCheckoutStatus] = useState("idle");
   const [checkoutMessage, setCheckoutMessage] = useState("");
   const [ticketCode, setTicketCode] = useState("");
+  const [currentUser] = useState(() => tokenStorage.getUser());
+  const isAdmin = currentUser?.roli === "admin";
 
   useEffect(() => {
     if (!id?.startsWith("db-")) {
@@ -383,15 +385,9 @@ function TicketPurchase() {
     setCheckoutMessage("");
     setTicketCode("");
 
-    const serviceId = import.meta.env.VITE_EMAILJS_SERVICE_ID;
-    const templateId = import.meta.env.VITE_EMAILJS_TEMPLATE_ID;
-    const publicKey = import.meta.env.VITE_EMAILJS_PUBLIC_KEY;
-
-    if (!serviceId || !templateId || !publicKey) {
+    if (isAdmin) {
       setCheckoutStatus("error");
-      setCheckoutMessage(
-        "EmailJS is not configured yet. Add your VITE_EMAILJS_SERVICE_ID, VITE_EMAILJS_TEMPLATE_ID, and VITE_EMAILJS_PUBLIC_KEY values."
-      );
+      setCheckoutMessage("Admins cannot purchase tickets.");
       return;
     }
 
@@ -432,21 +428,19 @@ function TicketPurchase() {
 
     try {
       setCheckoutStatus("sending");
-      await emailjs.send(serviceId, templateId, templateParams, {
-        publicKey,
-      });
+      // Use optimized email service with 10 second timeout
+      await sendEmail(templateParams, 10000);
       setTicketCode(newTicketCode);
       setCheckoutStatus("success");
       setCheckoutMessage(
         `Ticket sent to ${checkout.email}. Your ticket code is ${newTicketCode}.`
       );
     } catch (error) {
-      console.error("EmailJS checkout error:", error);
-      const emailJsError =
-        error?.text || error?.message || "Unknown EmailJS error";
+      console.error("Email checkout error:", error);
+      const errorMessage = error?.message || error?.text || "Unknown error";
       setCheckoutStatus("error");
       setCheckoutMessage(
-        `Checkout saved, but the ticket email could not be sent. EmailJS says: ${emailJsError}`
+        `Checkout saved, but the ticket email could not be sent. Error: ${errorMessage}`
       );
     }
   };
@@ -744,9 +738,9 @@ function TicketPurchase() {
               <button
                 className="checkout-button"
                 type="submit"
-                disabled={checkoutStatus === "sending"}
+                disabled={checkoutStatus === "sending" || isAdmin}
               >
-                {checkoutStatus === "sending" ? "Sending ticket..." : "Pay and email ticket"}
+                {isAdmin ? "Admins cannot purchase tickets" : checkoutStatus === "sending" ? "Sending ticket..." : "Pay and email ticket"}
               </button>
             </form>
 

@@ -1,8 +1,8 @@
-const { sendEmail } = require('../emails/sendEmail');
-const { BookingConfirmation } = require('../emails/templates/BookingConfirmation');
-const { EventReminder } = require('../emails/templates/EventReminder');
-const { BookingCancelled } = require('../emails/templates/BookingCancelled');
-const db = require('../../database/db');
+const { sendEmail } = require("../emails/sendEmail");
+
+const BookingConfirmation = require("../emails/templates/BookingConfirmation");
+const EventReminder = require("../emails/templates/EventReminder");
+const BookingCancelled = require("../emails/templates/BookingCancelled");
 
 /**
  * Send booking confirmation email
@@ -38,14 +38,15 @@ const sendBookingConfirmation = async (bookingData) => {
     );
 
     if (result.success) {
-      console.log(`✅ Booking confirmation email sent successfully`);
+      console.log("✅ Booking confirmation email sent successfully");
     } else {
-      console.error(`❌ Failed to send booking confirmation:`, result.error);
+      console.error("❌ Failed to send booking confirmation:", result.error);
     }
 
     return result;
   } catch (error) {
-    console.error('❌ Error in sendBookingConfirmation:', error.message);
+    console.error("❌ Error in sendBookingConfirmation:", error.message);
+
     return {
       success: false,
       error: error.message
@@ -85,14 +86,15 @@ const sendEventReminder = async (reminderData) => {
     );
 
     if (result.success) {
-      console.log(`✅ Event reminder email sent successfully`);
+      console.log("✅ Event reminder email sent successfully");
     } else {
-      console.error(`❌ Failed to send event reminder:`, result.error);
+      console.error("❌ Failed to send event reminder:", result.error);
     }
 
     return result;
   } catch (error) {
-    console.error('❌ Error in sendEventReminder:', error.message);
+    console.error("❌ Error in sendEventReminder:", error.message);
+
     return {
       success: false,
       error: error.message
@@ -128,14 +130,15 @@ const sendBookingCancellation = async (cancellationData) => {
     );
 
     if (result.success) {
-      console.log(`✅ Booking cancellation email sent successfully`);
+      console.log("✅ Booking cancellation email sent successfully");
     } else {
-      console.error(`❌ Failed to send booking cancellation:`, result.error);
+      console.error("❌ Failed to send booking cancellation:", result.error);
     }
 
     return result;
   } catch (error) {
-    console.error('❌ Error in sendBookingCancellation:', error.message);
+    console.error("❌ Error in sendBookingCancellation:", error.message);
+
     return {
       success: false,
       error: error.message

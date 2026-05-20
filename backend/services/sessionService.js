@@ -14,7 +14,7 @@ const refreshTokensTableReady = (async () => {
   await db.query(`
     CREATE TABLE IF NOT EXISTS "RefreshTokens" (
       id SERIAL PRIMARY KEY,
-      user_id INTEGER NOT NULL REFERENCES "Users"(id) ON DELETE CASCADE,
+      user_id UUID NOT NULL REFERENCES "Users"(id) ON DELETE CASCADE,
       token_jti TEXT NOT NULL UNIQUE,
       token_hash TEXT NOT NULL UNIQUE,
       expires_at TIMESTAMPTZ NOT NULL,

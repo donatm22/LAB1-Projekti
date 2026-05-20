@@ -5,10 +5,10 @@ import { authApi, tokenStorage } from "../services/api";
 
 const navItems = [
   { label: "Home", to: "/home" },
-  { label: "Events", href: "events" },
-  { label: "About Us", href: "about" },
+  { label: "Events", to: "/events" },
+  { label: "About Us", to: "/about" },
   { label: "Exhibitions", href: "#exhibitions" },
-  { label: "Socials", href:"socials" },
+  { label: "Socials", to: "/socials" },
 ];
 
 function Navbar() {
@@ -25,11 +25,20 @@ function Navbar() {
   useEffect(() => {
     setIsOpen(false);
     setCurrentUser(tokenStorage.getUser());
-  }, [location]);
+    // Sync search value with URL params when on events page
+    if (location.pathname === "/events") {
+      setSearchValue(searchParams.get("q") || "");
+    } else {
+      setSearchValue("");
+    }
+  }, [location.pathname]);
 
   useEffect(() => {
-    setSearchValue(searchParams.get("q") || "");
-  }, [searchParams]);
+    // Update search value when search params change (for real-time updates on events page)
+    if (location.pathname === "/events") {
+      setSearchValue(searchParams.get("q") || "");
+    }
+  }, [searchParams, location.pathname]);
 
   useEffect(() => {
     const updateSession = () => {

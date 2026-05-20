@@ -8,11 +8,10 @@ import { eventCategoriesApi, eventsApi } from "../services/api";
 import { mapApiEventToCard } from "../utils/eventMapper";
 import './Eventet.css';
  
-const FILTERS = ['All', 'Upcoming', 'Concerts', 'Educational Talks', 'Comedy'];
- 
 const EventsPage = () => {
   const [activeFilter, setActiveFilter] = useState('All');
   const [apiEvents, setApiEvents] = useState([]);
+  const [filters, setFilters] = useState(['All']);
   const [searchParams] = useSearchParams();
   const searchQuery = (searchParams.get('q') || '').trim().toLowerCase();
   const allEvents = useMemo(() => apiEvents, [apiEvents]);
@@ -33,6 +32,12 @@ const EventsPage = () => {
           : [];
 
         setApiEvents(mappedEvents);
+
+        // Dynamically create filters from actual categories
+        if (Array.isArray(categories) && categories.length > 0) {
+          const categoryNames = categories.map((cat) => cat.emri);
+          setFilters(['All', ...categoryNames]);
+        }
       })
       .catch((error) => {
         console.error("Failed to load events:", error);
@@ -79,7 +84,7 @@ const EventsPage = () => {
             </h1>
  
             <div class="filter-row">
-              {FILTERS.map((f) => (
+              {filters.map((f) => (
                 <button
                   key={f}
                   class={`filter-btn ${activeFilter === f ? 'filter-btn--active' : ''}`}

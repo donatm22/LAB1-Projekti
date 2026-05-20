@@ -1,25 +1,74 @@
 import { BrowserRouter, Routes, Route } from "react-router-dom";
 import { lazy, Suspense, useEffect } from "react";
 import { authApi, tokenStorage } from "./services/api";
+import { preloadComponents } from "./utils/lazyLoadingUtils";
+import { preInitializeEmailJS } from "./services/emailService";
 import LoadingFallback from "./components/LoadingFallback";
 import ErrorBoundary from "./components/ErrorBoundary";
 
-// Lazy load all page components for code splitting
-const Home = lazy(() => import("./pages/Home"));
-const Login = lazy(() => import("./pages/Login"));
-const Signup = lazy(() => import("./pages/Signup"));
-const AboutUs = lazy(() => import("./pages/About"));
-const Socials = lazy(() => import("./pages/Socials"));
-const EventsPage = lazy(() => import("./pages/Eventet"));
-const TicketPurchase = lazy(() => import("./pages/TicketPurchase"));
-const AdminDashboard = lazy(() => import("./pages/AdminDashboard"));
-const Account = lazy(() => import("./pages/Account"));
-const Chatbot = lazy(() => import("./components/Chatbot"));
+// Lazy load all page components for code splitting with webpack chunk names for better caching
+const Home = lazy(() =>
+  import(/* webpackChunkName: "page-home" */ "./pages/Home")
+);
+const Login = lazy(() =>
+  import(/* webpackChunkName: "page-login" */ "./pages/Login")
+);
+const Signup = lazy(() =>
+  import(/* webpackChunkName: "page-signup" */ "./pages/Signup")
+);
+const AboutUs = lazy(() =>
+  import(/* webpackChunkName: "page-about" */ "./pages/About")
+);
+const Socials = lazy(() =>
+  import(/* webpackChunkName: "page-socials" */ "./pages/Socials")
+);
+const EventsPage = lazy(() =>
+  import(/* webpackChunkName: "page-events" */ "./pages/Eventet")
+);
+const TicketPurchase = lazy(() =>
+  import(/* webpackChunkName: "page-tickets" */ "./pages/TicketPurchase")
+);
+const AdminDashboard = lazy(() =>
+  import(/* webpackChunkName: "page-admin" */ "./pages/AdminDashboard")
+);
+const Account = lazy(() =>
+  import(/* webpackChunkName: "page-account" */ "./pages/Account")
+);
+const Chatbot = lazy(() =>
+  import(/* webpackChunkName: "component-chatbot" */ "./components/Chatbot")
+);
 
 function App() {
   useEffect(() => {
+    // Validate and refresh auth token
     if (!tokenStorage.getToken()) {
       authApi.refresh().catch(() => {});
+    }
+
+    // Pre-initialize EmailJS in background for faster ticket sending
+    preInitializeEmailJS().catch(() => {});
+
+    // Preload frequently visited pages after initial render for faster navigation
+    const preloadCommonPages = () => {
+      preloadComponents([
+        {
+          importFunc: () =>
+            import(/* webpackChunkName: "page-events" */ "./pages/Eventet"),
+          cacheKey: "events",
+        },
+        {
+          importFunc: () =>
+            import(/* webpackChunkName: "page-login" */ "./pages/Login"),
+          cacheKey: "login",
+        },
+      ]);
+    };
+
+    // Schedule preloading for idle time to not block initial render
+    if (typeof requestIdleCallback !== "undefined") {
+      requestIdleCallback(preloadCommonPages, { timeout: 2000 });
+    } else {
+      setTimeout(preloadCommonPages, 1500);
     }
   }, []);
 

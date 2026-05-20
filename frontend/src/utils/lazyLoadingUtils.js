@@ -1,9 +1,12 @@
 /**
  * Lazy loading utilities for React components
- * Helps with code splitting and dynamic imports
+ * Optimized for performance with preloading and selective lazy loading
  */
 
-import { lazy, Suspense } from "react";
+import React, { lazy, Suspense } from "react";
+
+// Cache for preloaded components
+const preloadCache = new Map();
 
 /**
  * Create a lazy-loaded component with a fallback UI
@@ -14,10 +17,10 @@ import { lazy, Suspense } from "react";
 export const createLazyComponent = (importFunc, FallbackComponent) => {
   const LazyComponent = lazy(importFunc);
 
-  return (props) => (
-    <Suspense fallback={<FallbackComponent />}>
-      <LazyComponent {...props} />
-    </Suspense>
+  return (props) => React.createElement(
+    Suspense,
+    { fallback: React.createElement(FallbackComponent) },
+    React.createElement(LazyComponent, props)
   );
 };
 
@@ -34,9 +37,68 @@ export const createMinimalLazyComponent = (importFunc) => {
  * Preload a component before it's needed
  * Useful for improving perceived performance on navigation
  * @param {Function} importFunc - Dynamic import function
+ * @param {string} cacheKey - Optional cache key to avoid duplicate preloads
  */
-export const preloadComponent = (importFunc) => {
-  importFunc();
+export const preloadComponent = (importFunc, cacheKey) => {
+  // Use cache to avoid duplicate preloads
+  const key = cacheKey || importFunc.toString();
+  
+  if (preloadCache.has(key)) {
+    return preloadCache.get(key);
+  }
+
+  const preloadPromise = importFunc().catch((error) => {
+    console.warn("Component preload failed:", error);
+  });
+
+  preloadCache.set(key, preloadPromise);
+  return preloadPromise;
+};
+
+/**
+ * Preload multiple components in parallel
+ * @param {Array} preloads - Array of { importFunc, cacheKey } objects
+ */
+export const preloadComponents = async (preloads) => {
+  return Promise.all(
+    preloads.map((preload) =>
+      preloadComponent(preload.importFunc, preload.cacheKey)
+    )
+  ).catch((error) => {
+    console.warn("Batch preload encountered errors:", error);
+  });
+};
+
+/**
+ * Preload on route change
+ * @param {string} route - Target route path
+ * @param {Object} importMap - Map of routes to import functions
+ */
+export const preloadOnRoute = (route, importMap) => {
+  const importFunc = importMap[route];
+  if (importFunc) {
+    preloadComponent(importFunc, route);
+  }
+};
+
+/**
+ * Preload on hover/focus for predicted navigation
+ * @param {Function} importFunc - Dynamic import function
+ * @param {HTMLElement} element - Element to attach listeners
+ * @param {string} cacheKey - Cache key
+ */
+export const preloadOnInteraction = (importFunc, element, cacheKey) => {
+  if (!element) return;
+
+  const handlePreload = () => {
+    preloadComponent(importFunc, cacheKey);
+    // Remove listener after first preload
+    element.removeEventListener("mouseenter", handlePreload);
+    element.removeEventListener("focus", handlePreload);
+  };
+
+  element.addEventListener("mouseenter", handlePreload, { once: true });
+  element.addEventListener("focus", handlePreload, { once: true });
 };
 
 /**
@@ -49,28 +111,20 @@ export const lazyPages = {
   Signup: () => import("../pages/Signup"),
   About: () => import("../pages/About"),
   Socials: () => import("../pages/Socials"),
-  Events: () => import("../pages/Eventet"),
+  EventsPage: () => import("../pages/Eventet"),
   TicketPurchase: () => import("../pages/TicketPurchase"),
-  Account: () => import("../pages/Account"),
   AdminDashboard: () => import("../pages/AdminDashboard"),
+  Account: () => import("../pages/Account"),
 };
 
 /**
  * Heavy components that benefit from lazy loading
  */
 export const lazyComponents = {
-  Chatbot: () => import("./Chatbot"),
-  Navbar: () => import("./Navbar"),
-  Footer: () => import("./Footer"),
-  Team: () => import("./Team"),
-};
-
-/**
- * Check if the browser supports dynamic imports
- * @returns {boolean} - true if dynamic imports are supported
- */
-export const supportsDynamicImport = () => {
-  return typeof import !== "undefined";
+  Chatbot: () => import("../components/Chatbot"),
+  Navbar: () => import("../components/Navbar"),
+  Footer: () => import("../components/Footer"),
+  Team: () => import("../components/Team"),
 };
 
 /**
