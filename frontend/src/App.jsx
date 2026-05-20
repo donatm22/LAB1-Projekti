@@ -7,6 +7,7 @@ import Socials from "./pages/Socials";
 import EventsPage from "./pages/Eventet";
 import TicketPurchase from "./pages/TicketPurchase";
 import AdminDashboard from "./pages/AdminDashboard";
+import Account from "./pages/Account";
 import Chatbot from "./components/Chatbot";
 
 function App() {
@@ -22,6 +23,7 @@ function App() {
         <Route path="/socials" element={<Socials />} />
         <Route path="/events" element={<EventsPage />} />
         <Route path="/events/:id/tickets" element={<TicketPurchase />} />
+        <Route path="/account" element={<Account />} />
         <Route path="/admin" element={<AdminDashboard />} />
       </Routes>
       <Chatbot />

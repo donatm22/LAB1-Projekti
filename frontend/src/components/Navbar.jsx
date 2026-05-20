@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef } from "react";
 import { Link, NavLink, useLocation, useNavigate, useSearchParams } from "react-router-dom";
 import "./Navbar.css";
-import { tokenStorage } from "../services/api";
+import { authApi, tokenStorage } from "../services/api";
 
 const navItems = [
   { label: "Home", to: "/home" },
@@ -76,6 +76,22 @@ function Navbar() {
     setIsOpen(false);
   };
 
+  const handleLogout = async () => {
+    const token = tokenStorage.getToken();
+
+    try {
+      if (token) {
+        await authApi.logout(token);
+      }
+    } catch (error) {
+      console.error("Logout failed:", error);
+    } finally {
+      tokenStorage.clear();
+      setIsOpen(false);
+      navigate("/home", { replace: true });
+    }
+  };
+
   return (
     <header className="navbar-shell" ref={menuRef}>
       <nav className="navbar">
@@ -120,20 +136,15 @@ function Navbar() {
           </form>
 
           {canCreateEvent && (
-            <Link className="navbar-cta" to="/create">
+            <Link className="navbar-cta" to="/admin">
               Create Event
             </Link>
           )}
 
           <Link
             className="navbar-profile"
-            to={currentUser ? "#" : "/login"}
-            aria-label="Open profile"
-            onClick={(e) => {
-              if (currentUser) {
-                e.preventDefault();
-              }
-            }}
+            to={currentUser ? "/account" : "/login"}
+            aria-label={currentUser ? "Open account" : "Log in"}
           >
             <svg viewBox="0 0 185.20833 185.20834" xmlns="http://www.w3.org/2000/svg">
               <g fill="currentColor">
@@ -142,6 +153,12 @@ function Navbar() {
               </g>
             </svg>
           </Link>
+
+          {currentUser ? (
+            <button type="button" className="navbar-logout" onClick={handleLogout}>
+              Logout
+            </button>
+          ) : null}
 
           <button
             className={`navbar-hamburger${isOpen ? " open" : ""}`}
@@ -199,6 +216,16 @@ function Navbar() {
             Create Event
           </Link>
         )}
+
+        {currentUser ? (
+          <button
+            type="button"
+            className="navbar-mobile-link navbar-mobile-logout"
+            onClick={handleLogout}
+          >
+            Logout
+          </button>
+        ) : null}
       </div>
     </header>
   );

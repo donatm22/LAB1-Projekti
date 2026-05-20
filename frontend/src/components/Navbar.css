@@ -145,6 +145,30 @@
   height: 55%;
 }
 
+.navbar-logout {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  height: 38px;
+  padding: 0 16px;
+  background: transparent;
+  color: var(--color-ink);
+  font-size: 0.82rem;
+  font-weight: 700;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-sm);
+  cursor: pointer;
+  transition: var(--transition);
+}
+
+.navbar-logout:hover,
+.navbar-logout:focus-visible {
+  border-color: var(--color-accent);
+  color: var(--color-accent);
+}
+
 .navbar-cta {
   display: inline-flex;
   align-items: center;
@@ -262,6 +286,21 @@
 
 .navbar-mobile-link:hover,
 .navbar-mobile-link.active {
+  color: var(--color-ink);
+  background: var(--color-bg-warm);
+}
+
+.navbar-mobile-logout {
+  width: 100%;
+  text-align: left;
+  background: transparent;
+  border: 0;
+  font: inherit;
+  cursor: pointer;
+}
+
+.navbar-mobile-logout:hover,
+.navbar-mobile-logout:focus-visible {
   color: var(--color-ink);
   background: var(--color-bg-warm);
 }
