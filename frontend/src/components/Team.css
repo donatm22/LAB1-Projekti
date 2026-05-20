@@ -160,3 +160,11 @@
   color: var(--color-ink-muted);
   line-height: 1.75;
 }
+
+@media (max-width: 768px) {
+  
+  .about-team-grid {
+  grid-template-columns: 1fr;
+}
+
+}

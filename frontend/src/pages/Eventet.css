@@ -1,3 +1,7 @@
+html, body {
+  overflow-x: hidden;
+  max-width: 100%;
+}
 
 .main{
   background: var(--color-bg);
@@ -198,6 +202,19 @@
   .grid {
     grid-template-columns: repeat(2, 1fr);
   }
+
+    .footer {
+    padding: 48px 24px 0;
+  }
+
+  .footer-inner {
+    grid-template-columns: 1fr;
+    gap: 40px;
+  }
+
+  .footer-links {
+    grid-template-columns: repeat(2, 1fr);
+  }
 }
 
 @media (max-width: 600px) {
@@ -207,5 +224,24 @@
 
   .grid {
     grid-template-columns: 1fr;
+  }
+  .footer {
+
+    padding: 48px 20px 0;
+  }
+
+  .footer-links {
+    grid-template-columns: 1fr;
+  }
+
+  .footer-bottom {
+    flex-direction: column;
+    gap: 12px;
+    align-items: flex-start;
+  }
+
+  .footer-bottom-links {
+    flex-wrap: wrap;
+    gap: 16px;
   }
 }

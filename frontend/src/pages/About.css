@@ -1,3 +1,8 @@
+html, body {
+  overflow-x: hidden;
+  max-width: 100%;
+}
+
 .about-wrapper {
   background: var(--color-bg);
   font-family: var(--font);
@@ -131,8 +136,14 @@
   color: #fff;
 }
 
-.about-mission {
+.about-mission{
   padding: 60px 40px;
+}
+
+.about-mission-inner{
+  display: flex;
+  flex-wrap: wrap; 
+  gap: 32px;
 }
 
 .about-timeline {
@@ -297,11 +308,14 @@
 }
 
 @media (max-width: 768px) {
-  .about-hero-content,
-  .about-mission-inner {
+  .about-hero-content{
     grid-template-columns: 1fr;
     gap: 32px;
   }
+
+   .about-mission-inner{
+    flex-direction: column;
+   }
 
   .about-hero-right {
     padding-top: 0;
@@ -327,5 +341,18 @@
 
   .about-timeline-item {
     grid-template-columns: 80px 1fr 20px;
+  }
+
+  .footer {
+    padding: 48px 24px 0;
+  }
+
+  .footer-inner {
+    grid-template-columns: 1fr;
+    gap: 40px;
+  }
+
+  .footer-links {
+    grid-template-columns: repeat(2, 1fr);
   }
 }
