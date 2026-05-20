@@ -141,10 +141,6 @@ const TABLE_COLUMNS = {
   organizers: ["id", "emri_organizates", "email", "telefoni", "website"],
 };
 
-const EVENT_IMAGE_OPTIONS = [
-  { value: "/profile.svg", label: "Default" },
-];
-
 const apiMap = {
   events: eventsApi,
   speakers: speakersApi,
@@ -276,11 +272,11 @@ function AdminDashboard() {
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState("");
   const [success, setSuccess] = useState("");
+  const [eventImageFile, setEventImageFile] = useState(null);
 
   const token = tokenStorage.getToken();
   const currentUser = tokenStorage.getUser();
 
-  // Check authorization on component mount
   useEffect(() => {
     const isAuthorized = currentUser?.roli === "admin" || currentUser?.roli === "organizer";
     if (!isAuthorized) {
@@ -302,7 +298,6 @@ function AdminDashboard() {
         value: event.id,
         label: event.titulli,
       })),
-      imazhi: EVENT_IMAGE_OPTIONS,
       roli: [
         { value: "user", label: "user" },
         { value: "admin", label: "admin" },
@@ -352,6 +347,18 @@ function AdminDashboard() {
   }, [loadDashboard]);
 
   const handleFormChange = (resource, field, value) => {
+    if (field === "imazhi" && value instanceof File) {
+      setEventImageFile(value);
+      setForms((current) => ({
+        ...current,
+        [resource]: {
+          ...current[resource],
+          [field]: value.name,
+        },
+      }));
+      return;
+    }
+
     setForms((current) => ({
       ...current,
       [resource]: {
@@ -370,6 +377,7 @@ function AdminDashboard() {
       ...current,
       [resource]: null,
     }));
+    setEventImageFile(null);
   };
 
   const handleEdit = (resource, item) => {
@@ -443,14 +451,27 @@ function AdminDashboard() {
       }
       
       const payload = normalizePayload(resource, forms[resource], isEditing);
-      // payload prepared and validated
+
+      // If creating/updating events and a file was selected, send multipart FormData
+      let bodyToSend = payload;
+
+      if (resource === "events") {
+        if (eventImageFile) {
+          const fd = new FormData();
+          Object.entries(payload).forEach(([k, v]) => {
+            if (v !== undefined && v !== null) fd.append(k, v);
+          });
+          fd.append("imazhi", eventImageFile);
+          bodyToSend = fd;
+        }
+      }
 
       let savedResponse;
 
       if (isEditing) {
-        savedResponse = await apiMap[resource].update(editingId[resource], payload, token);
+        savedResponse = await apiMap[resource].update(editingId[resource], bodyToSend, token);
       } else {
-        savedResponse = await apiMap[resource].create(payload, token);
+        savedResponse = await apiMap[resource].create(bodyToSend, token);
       }
 
       const savedItem = getSavedItem(resource, savedResponse);
@@ -607,20 +628,39 @@ function AdminDashboard() {
                             rows="5"
                           />
                         ) : field.type === "select" ? (
-                          <select
-                            value={value}
-                            onChange={(event) =>
-                              handleFormChange(activeResource, field.name, event.target.value)
-                            }
-                            required={field.required}
-                          >
-                            <option value="">Select {field.label.toLowerCase()}</option>
-                            {options.map((option) => (
-                              <option key={option.value} value={option.value}>
-                                {option.label}
-                              </option>
-                            ))}
-                          </select>
+                          field.name === "imazhi" ? (
+                            <div className="upload-field">
+                              <span className="upload-field-label">Upload image</span>
+                              <input
+                                type="file"
+                                accept="image/*"
+                                onChange={(e) => {
+                                  const f = e.target.files && e.target.files[0];
+                                  if (f) {
+                                    handleFormChange(activeResource, field.name, f);
+                                  }
+                                }}
+                              />
+                              {forms[activeResource].imazhi ? (
+                                <div className="upload-preview">{forms[activeResource].imazhi}</div>
+                              ) : null}
+                            </div>
+                          ) : (
+                            <select
+                              value={value}
+                              onChange={(event) =>
+                                handleFormChange(activeResource, field.name, event.target.value)
+                              }
+                              required={field.required}
+                            >
+                              <option value="">Select {field.label.toLowerCase()}</option>
+                              {options.map((option) => (
+                                <option key={option.value} value={option.value}>
+                                  {option.label}
+                                </option>
+                              ))}
+                            </select>
+                          )
                         ) : (
                           <input
                             type={field.type}

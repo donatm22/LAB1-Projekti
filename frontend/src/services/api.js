@@ -59,10 +59,10 @@ export const clearCache = (pattern) => {
   }
 };
 
-const buildHeaders = (token, hasBody = false) => {
+const buildHeaders = (token, hasBody = false, isFormData = false) => {
   const headers = {};
 
-  if (hasBody) {
+  if (hasBody && !isFormData) {
     headers["Content-Type"] = "application/json";
   }
 
@@ -94,13 +94,15 @@ const request = async (path, options = {}) => {
     }
   }
 
-  try {
+    const isFormData = body instanceof FormData;
+
+    try {
     const response = await axios.request({
       url: apiUrl(path),
       method,
       withCredentials: true,
       headers: {
-        ...buildHeaders(token, body !== undefined),
+          ...buildHeaders(token, body !== undefined, isFormData),
         ...headers,
       },
       data: body,
