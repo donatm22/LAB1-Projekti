@@ -179,7 +179,7 @@ function Home() {
                   <div className="featured-main-overlay">
                     <span className="archive-category">{activeFeaturedEvent.category}</span>
                     <h3>{activeFeaturedEvent.title}</h3>
-                    <p>{activeFeaturedEvent.speaker}</p>
+                    
                     <span className="featured-location">{activeFeaturedEvent.location} - {activeFeaturedEvent.date}</span>
                   </div>
                 </Link>
