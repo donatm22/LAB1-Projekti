@@ -71,6 +71,14 @@ const updateTicketType = (req, res) => {
 
 const deleteTicketType = (req, res) => {
   const { id } = req.params;
+  const isOrganizer = req.user?.roli === "organizer";
+
+  // Only admins can delete ticket types
+  if (isOrganizer) {
+    return res.status(403).json({
+      message: "Access denied. Only admins can delete ticket types."
+    });
+  }
 
   db.query('DELETE FROM "TicketTypes" WHERE id = $1', [id], (err, result) => {
     if (err) {

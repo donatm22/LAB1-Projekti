@@ -67,7 +67,7 @@ const buildEventImages = (req, fallbackImageValue = null) => {
 
 const getEvents = (req, res) => {
     const shouldScopeToManager = req.query.scope === "manage";
-    const isOrganizer = req.user?.roli === "organizer";
+    const isOrganizerUser = req.user?.roli === "organizer";
     const params = [];
     let sql = 'SELECT * FROM "Events"';
 
@@ -75,8 +75,14 @@ const getEvents = (req, res) => {
         return res.status(401).json({ message: "Authentication required" });
     }
 
-    if (shouldScopeToManager && isOrganizer) {
+    // Organizers can manage only their own events
+    if (shouldScopeToManager && isOrganizerUser) {
         sql += ' WHERE organizer_id = $1';
+        params.push(req.user.id);
+    }
+    // Organizers viewing events see only events they didn't create
+    else if (isOrganizerUser && !shouldScopeToManager) {
+        sql += ' WHERE organizer_id != $1';
         params.push(req.user.id);
     }
 
@@ -94,6 +100,8 @@ const getEvents = (req, res) => {
 
 const getEventById = (req, res) => {
     const {id} = req.params;
+    const isOrganizerUser = req.user?.roli === "organizer";
+    
     db.query('SELECT * FROM "Events" WHERE id = $1', [id], (err, results)  => {
         if(err){
             return res.status(500).json({
@@ -105,7 +113,15 @@ const getEventById = (req, res) => {
                 message: "Eventi nuk u gjet"
             });
         }
-        res.json(results.rows[0]);
+
+        const event = results.rows[0];
+
+        // Organizers cannot view events they created (unless managing)
+        if (isOrganizerUser && String(event.organizer_id) === String(req.user.id) && req.query.scope !== "manage") {
+            return res.status(403).json({ message: "Access denied" });
+        }
+
+        res.json(event);
     });
 };
 
@@ -247,21 +263,43 @@ const updateEvent = (req, res) =>{
 
 const deleteEvent = (req, res) => {
     const {id} = req.params;
+    const isOrganizerUser = req.user?.roli === "organizer";
 
-    db.query('DELETE FROM "Events" WHERE id = $1', [id], (err, result) => {
-        if(err){
+    // First check if event exists and get its organizer_id
+    db.query('SELECT organizer_id FROM "Events" WHERE id = $1', [id], (checkErr, checkResult) => {
+        if (checkErr) {
             return res.status(500).json({
-                error: err.message
+                error: checkErr.message
             });
         }
-        if(result.rowCount === 0){
+
+        if (checkResult.rows.length === 0) {
             return res.status(404).json({
                 message: "Eventi nuk u gjet!"
             });
         }
 
-        res.json({
-            message:"Eventi u fshi me sukses"
+        // Organizers can only delete their own events
+        if (isOrganizerUser && String(checkResult.rows[0].organizer_id) !== String(req.user.id)) {
+            return res.status(403).json({ message: "Access denied" });
+        }
+
+        // Proceed with deletion
+        db.query('DELETE FROM "Events" WHERE id = $1', [id], (err, result) => {
+            if(err){
+                return res.status(500).json({
+                    error: err.message
+                });
+            }
+            if(result.rowCount === 0){
+                return res.status(404).json({
+                    message: "Eventi nuk u gjet!"
+                });
+            }
+
+            res.json({
+                message:"Eventi u fshi me sukses"
+            });
         });
     });
 };

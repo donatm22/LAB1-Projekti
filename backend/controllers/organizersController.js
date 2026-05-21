@@ -79,6 +79,14 @@ const updateOrganizer = (req, res) => {
 
 const deleteOrganizer = (req, res) => {
   const { id } = req.params;
+  const isOrganizer = req.user?.roli === "organizer";
+
+  // Only admins can delete organizers
+  if (isOrganizer) {
+    return res.status(403).json({
+      message: "Access denied. Only admins can delete organizers."
+    });
+  }
 
   db.query('DELETE FROM "Organizers" WHERE id = $1', [id], (err, result) => {
     if (err) {
