@@ -3,6 +3,7 @@ const fs = require("fs/promises");
 const verifyToken = require("../middleware/authMiddleware");
 const optionalAuth = require("../middleware/optionalAuthMiddleware");
 const allowRoles = require("../middleware/roleMiddleware");
+const checkEventOwnership = require("../middleware/eventOwnershipMiddleware");
 const upload = require("../middleware/eventUploadMiddleware");
 const {
     getEvents,
@@ -80,8 +81,8 @@ router.get("/:id", getEventById);
 
 router.post("/POST", verifyToken, allowRoles("admin", "organizer"), handleEventUpload, createEvent);
 
-router.put("/PUT/:id", verifyToken, allowRoles("admin", "organizer"), handleEventUpload, updateEvent);
+router.put("/PUT/:id", verifyToken, checkEventOwnership, handleEventUpload, updateEvent);
 
-router.delete("/DELETE/:id", verifyToken, allowRoles("admin"), deleteEvent);
+router.delete("/DELETE/:id", verifyToken, checkEventOwnership, deleteEvent);
 
 module.exports = router;

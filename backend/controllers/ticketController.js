@@ -140,16 +140,16 @@ const updateTicket = (req, res) => {
 
 const deleteTicket = (req, res) => {
     const { id } = req.params;
+    const isOrganizerUser = req.user?.roli === "organizer";
 
-    const params = [id];
-    let sql = 'DELETE FROM "Tickets" WHERE id = $1';
-
-    if (!isAdmin(req)) {
-        sql += ' AND EXISTS (SELECT 1 FROM "Events" e WHERE e.id = "Tickets".event_id AND e.organizer_id = $2)';
-        params.push(req.user.id);
+    // Only admins can delete tickets directly
+    if (isOrganizerUser) {
+        return res.status(403).json({
+            message: "Access denied. Only admins can delete tickets."
+        });
     }
 
-    db.query(sql, params, (err, result) => {
+    db.query('DELETE FROM "Tickets" WHERE id = $1', [id], (err, result) => {
         if (err) {
             return res.status(500).json({
                 error: err.message

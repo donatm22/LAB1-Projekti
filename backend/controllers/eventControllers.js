@@ -186,6 +186,8 @@ const updateEvent = (req, res) =>{
     const {titulli, pershkrimi, data_fillimit, data_perfundimit, lokacioni, kapaciteti, statusi , organizer_id, category_id} = req.body;
     const {id} = req.params;
 
+    console.log(`[EVENT] Update event - ID: ${id}, User: ${req.user?.id}, Role: ${req.user?.roli}`);
+
     if(!titulli || !pershkrimi || !data_fillimit || !data_perfundimit || !lokacioni || !kapaciteti || !statusi || !organizer_id || !category_id){
         return res.status(400).json({
             message: "Vlerat jane te zbrazeta!"
@@ -263,43 +265,24 @@ const updateEvent = (req, res) =>{
 
 const deleteEvent = (req, res) => {
     const {id} = req.params;
-    const isOrganizerUser = req.user?.roli === "organizer";
 
-    // First check if event exists and get its organizer_id
-    db.query('SELECT organizer_id FROM "Events" WHERE id = $1', [id], (checkErr, checkResult) => {
-        if (checkErr) {
+    console.log(`[EVENT] Delete event - ID: ${id}, User: ${req.user?.id}, Role: ${req.user?.roli}`);
+
+    // Middleware already checked ownership, just delete
+    db.query('DELETE FROM "Events" WHERE id = $1', [id], (err, result) => {
+        if(err){
             return res.status(500).json({
-                error: checkErr.message
+                error: err.message
             });
         }
-
-        if (checkResult.rows.length === 0) {
+        if(result.rowCount === 0){
             return res.status(404).json({
                 message: "Eventi nuk u gjet!"
             });
         }
 
-        // Organizers can only delete their own events
-        if (isOrganizerUser && String(checkResult.rows[0].organizer_id) !== String(req.user.id)) {
-            return res.status(403).json({ message: "Access denied" });
-        }
-
-        // Proceed with deletion
-        db.query('DELETE FROM "Events" WHERE id = $1', [id], (err, result) => {
-            if(err){
-                return res.status(500).json({
-                    error: err.message
-                });
-            }
-            if(result.rowCount === 0){
-                return res.status(404).json({
-                    message: "Eventi nuk u gjet!"
-                });
-            }
-
-            res.json({
-                message:"Eventi u fshi me sukses"
-            });
+        res.json({
+            message:"Eventi u fshi me sukses"
         });
     });
 };

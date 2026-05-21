@@ -127,6 +127,9 @@ const getRegistrationsByUser = (req, res) => {
 const createRegistration = async (req, res) => {
     const { event_id, ticket_id } = req.body;
     const user_id = req.user?.id;
+    const userRole = req.user?.roli;
+
+    console.log(`[REG] Create registration - User: ${user_id}, Role: ${userRole}, Event: ${event_id}, Ticket: ${ticket_id}`);
 
     if (!event_id || !ticket_id) {
         return res.status(400).json({ message: "Ploteso event_id dhe ticket_id" });
@@ -134,6 +137,14 @@ const createRegistration = async (req, res) => {
 
     if (!user_id) {
         return res.status(401).json({ message: "Perdoruesi nuk eshte i autentikuar" });
+    }
+
+    // Organizers cannot book tickets - they can only manage their events
+    if (userRole === "organizer") {
+        console.log(`[REG] Organizer tried to book tickets - DENIED`);
+        return res.status(403).json({
+            message: "Access denied. Organizers cannot book tickets."
+        });
     }
 
     const client = await db.connect();
