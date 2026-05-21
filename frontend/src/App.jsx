@@ -18,6 +18,9 @@ const Signup = lazy(() =>
 const AboutUs = lazy(() =>
   import(/* webpackChunkName: "page-about" */ "./pages/About")
 );
+const ContactUs = lazy(() =>
+  import(/* webpackChunkName: "page-about" */ "./pages/Contact")
+);
 const Socials = lazy(() =>
   import(/* webpackChunkName: "page-socials" */ "./pages/Socials")
 );
@@ -78,6 +81,7 @@ function App() {
             <Route path="/login" element={<Login />} />
             <Route path="/signup" element={<Signup />} />
             <Route path="/register" element={<Signup />} />
+            <Route path="/contact" element={<ContactUs />} />            
             <Route path="/about" element={<AboutUs />} />
             <Route path="/socials" element={<Socials />} />
             <Route path="/events" element={<EventsPage />} />

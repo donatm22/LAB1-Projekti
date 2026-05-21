@@ -7,7 +7,7 @@ const navItems = [
   { label: "Home", to: "/home" },
   { label: "Events", to: "/events" },
   { label: "About Us", to: "/about" },
-  { label: "Exhibitions", href: "#exhibitions" },
+  { label: "Contact", to: "/contact" },
   { label: "Socials", to: "/socials" },
 ];
 
