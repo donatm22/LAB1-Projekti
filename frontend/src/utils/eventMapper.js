@@ -56,6 +56,7 @@ export const mapApiEventToCard = (event, categories = []) => {
   return {
     id: `db-${event.id}`,
     backendId: event.id,
+    categoryId: category?.id ?? event.category_id ?? null,
     category: category?.emri || "Upcoming",
     speaker: event.speaker || event.titulli || "Upcoming",
     title: event.titulli,

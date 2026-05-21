@@ -1,20 +1,18 @@
-import React, { useEffect, useMemo, useState } from 'react';
-import { useSearchParams } from 'react-router-dom';
+import React, { useEffect, useMemo, useState } from "react";
+import { useSearchParams } from "react-router-dom";
 import Navbar from "../components/Navbar";
 import Footer from "../components/Footer";
-import EventCard from '../components/EventCard';
+import EventCard from "../components/EventCard";
 import { eventCategoriesApi, eventsApi } from "../services/api";
-// static events removed: use only dynamically fetched events
 import { mapApiEventToCard } from "../utils/eventMapper";
-import './Eventet.css';
- 
+import "./Eventet.css";
+
 const EventsPage = () => {
-  const [activeFilter, setActiveFilter] = useState('All');
+  const [activeFilter, setActiveFilter] = useState("all");
   const [apiEvents, setApiEvents] = useState([]);
-  const [filters, setFilters] = useState(['All']);
+  const [filters, setFilters] = useState([{ id: "all", label: "All" }]);
   const [searchParams] = useSearchParams();
-  const searchQuery = (searchParams.get('q') || '').trim().toLowerCase();
-  const allEvents = useMemo(() => apiEvents, [apiEvents]);
+  const searchQuery = (searchParams.get("q") || "").trim().toLowerCase();
 
   useEffect(() => {
     let isMounted = true;
@@ -25,19 +23,19 @@ const EventsPage = () => {
           return;
         }
 
+        const mappedCategories = Array.isArray(categories) ? categories : [];
         const mappedEvents = Array.isArray(events)
-          ? events.map((event) =>
-              mapApiEventToCard(event, Array.isArray(categories) ? categories : [])
-            )
+          ? events.map((event) => mapApiEventToCard(event, mappedCategories))
           : [];
 
         setApiEvents(mappedEvents);
-
-        // Dynamically create filters from actual categories
-        if (Array.isArray(categories) && categories.length > 0) {
-          const categoryNames = categories.map((cat) => cat.emri);
-          setFilters(['All', ...categoryNames]);
-        }
+        setFilters([
+          { id: "all", label: "All" },
+          ...mappedCategories.map((category) => ({
+            id: String(category.id),
+            label: category.emri,
+          })),
+        ]);
       })
       .catch((error) => {
         console.error("Failed to load events:", error);
@@ -50,8 +48,10 @@ const EventsPage = () => {
 
   const visibleEvents = useMemo(
     () =>
-      allEvents.filter((event) => {
-        const matchesFilter = activeFilter === 'All' || event.category === activeFilter;
+      apiEvents.filter((event) => {
+        const matchesFilter =
+          activeFilter === "all" || String(event.categoryId) === String(activeFilter);
+
         const searchableText = [
           event.title,
           event.speaker,
@@ -60,89 +60,76 @@ const EventsPage = () => {
           event.date,
         ]
           .filter(Boolean)
-          .join(' ')
+          .join(" ")
           .toLowerCase();
 
         return matchesFilter && (!searchQuery || searchableText.includes(searchQuery));
       }),
-    [activeFilter, allEvents, searchQuery]
+    [activeFilter, apiEvents, searchQuery]
   );
- 
+
   return (
     <div>
-    <Navbar />
-      <main class="main">
- 
-     
-        <section class="hero-section">
-          <div class="hero-inner">
-            <p class="eyebrow">Curated Experiences</p>
-            <h1 class="headline">
-              Find your next{' '}
-              <span class="headline-accent">ethereal</span>{' '}
-              moment.
+      <Navbar />
+      <main className="main">
+        <section className="hero-section">
+          <div className="hero-inner">
+            <p className="eyebrow">Curated Experiences</p>
+            <h1 className="headline">
+              Find your next <span className="headline-accent">ethereal</span> moment.
             </h1>
- 
-            <div class="filter-row">
-              {filters.map((f) => (
+
+            <div className="filter-row">
+              {filters.map((filter) => (
                 <button
-                  key={f}
-                  class={`filter-btn ${activeFilter === f ? 'filter-btn--active' : ''}`}
-                  onClick={() => setActiveFilter(f)}
+                  key={filter.id}
+                  type="button"
+                  className={`filter-btn ${activeFilter === filter.id ? "filter-btn--active" : ""}`}
+                  onClick={() => setActiveFilter(filter.id)}
                 >
-                  {f}
+                  {filter.label}
                 </button>
               ))}
             </div>
           </div>
- 
-      
-          <div class="hero-rule">
-            <span class="rule-label">
-              {visibleEvents.length} events available
-            </span>
-            <div class="rule-line" />
+
+          <div className="hero-rule">
+            <span className="rule-label">{visibleEvents.length} events available</span>
+            <div className="rule-line" />
           </div>
         </section>
- 
-    
-        <section class="grid-section">
+
+        <section className="grid-section">
           {visibleEvents.length > 0 ? (
-            <div class="grid">
-              {visibleEvents.map((event, i) => (
+            <div className="grid">
+              {visibleEvents.map((event, index) => (
                 <div
                   key={event.id}
-                  class="card-wrapper"
-                  style={{ animationDelay: `${i * 60}ms` }}
+                  className="card-wrapper"
+                  style={{ animationDelay: `${index * 60}ms` }}
                 >
                   <EventCard {...event} />
                 </div>
               ))}
             </div>
           ) : (
-            <div class="empty-state">
-              No events match your search.
-            </div>
+            <div className="empty-state">No events match your search.</div>
           )}
         </section>
- 
-   
-        <section class="quote-section">
-          <div class="quote-inner">
-            <div class="quote-mark">&ldquo;</div>
-            <blockquote class="quote-text">
-              Design is not just what it looks like and feels like.
-              Design is how it{' '}
-              <em class="quote-accent">connects</em> us to the moment.
+
+        <section className="quote-section">
+          <div className="quote-inner">
+            <div className="quote-mark">&ldquo;</div>
+            <blockquote className="quote-text">
+              Design is not just what it looks like and feels like. Design is how it{" "}
+              <em className="quote-accent">connects</em> us to the moment.
             </blockquote>
           </div>
         </section>
- 
       </main>
       <Footer />
     </div>
-    
   );
 };
- 
+
 export default EventsPage;
