@@ -182,6 +182,85 @@ const formatDateTimeInput = (value) => {
   return normalized.slice(0, 16);
 };
 
+const LETTERS_ONLY_REGEX = /^[A-Za-zÀ-ÖØ-öø-ÿ\s'-.]+$/;
+const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+const PHONE_REGEX = /^\+?[0-9\s()-]{7,20}$/;
+
+const validateResourceForm = (resource, values, isEditing) => {
+  if (resource === "events") {
+    if (!/^\d+$/.test(String(values.kapaciteti).trim()) || Number(values.kapaciteti) <= 0) {
+      return "Capacity duhet te jete numer pozitiv.";
+    }
+
+    if (Number.isNaN(Date.parse(values.data_fillimit)) || Number.isNaN(Date.parse(values.data_perfundimit))) {
+      return "Start date dhe end date duhet te jene data valide.";
+    }
+
+    if (new Date(values.data_perfundimit) < new Date(values.data_fillimit)) {
+      return "End date duhet te jete pas start date.";
+    }
+  }
+
+  if (resource === "tickets") {
+    if (!/^\d+(\.\d+)?$/.test(String(values.cmimi).trim()) || Number(values.cmimi) <= 0) {
+      return "Price duhet te jete numer pozitiv.";
+    }
+
+    if (!/^\d+$/.test(String(values.sasia).trim()) || Number(values.sasia) <= 0) {
+      return "Quantity duhet te jete numer pozitiv.";
+    }
+  }
+
+  if (resource === "speakers" && !LETTERS_ONLY_REGEX.test(String(values.emri).trim())) {
+    return "Speaker name mund te permbaje vetem shkronja.";
+  }
+
+  if (resource === "categories" && !LETTERS_ONLY_REGEX.test(String(values.emri).trim())) {
+    return "Category name mund te permbaje vetem shkronja.";
+  }
+
+  if (resource === "users") {
+    if (!LETTERS_ONLY_REGEX.test(String(values.emri).trim())) {
+      return "User name mund te permbaje vetem shkronja.";
+    }
+
+    if (!EMAIL_REGEX.test(String(values.email).trim())) {
+      return "Email nuk eshte valid.";
+    }
+
+    if (!isEditing && String(values.password || "").length < 6) {
+      return "Password duhet te kete te pakten 6 karaktere.";
+    }
+
+    if (isEditing && values.password && String(values.password).length < 6) {
+      return "Password duhet te kete te pakten 6 karaktere.";
+    }
+  }
+
+  if (resource === "organizers") {
+    if (values.email && !EMAIL_REGEX.test(String(values.email).trim())) {
+      return "Organizer email nuk eshte valid.";
+    }
+
+    if (values.telefoni && !PHONE_REGEX.test(String(values.telefoni).trim())) {
+      return "Phone duhet te permbaje vetem shifra dhe simbole valide.";
+    }
+
+    if (values.website) {
+      try {
+        const url = new URL(String(values.website).trim());
+        if (!["http:", "https:"].includes(url.protocol)) {
+          return "Website duhet te jete link valid.";
+        }
+      } catch {
+        return "Website duhet te jete link valid.";
+      }
+    }
+  }
+
+  return "";
+};
+
 const normalizePayload = (resource, values, isEditing) => {
   const payload = { ...values };
 
@@ -487,6 +566,13 @@ function AdminDashboard() {
         setError(`Please fill in all required fields: ${emptyFields.join(", ")}`);
         return;
       }
+
+      const validationError = validateResourceForm(resource, formValues, isEditing);
+      if (validationError) {
+        setSaving(false);
+        setError(validationError);
+        return;
+      }
       
       const payload = normalizePayload(resource, forms[resource], isEditing);
 
@@ -718,11 +804,23 @@ function AdminDashboard() {
                             type={field.type}
                             value={value}
                             onChange={(event) =>
-                              handleFormChange(activeResource, field.name, event.target.value)
+                                handleFormChange(activeResource, field.name, event.target.value)
                             }
                             placeholder={field.placeholder || ""}
                             required={isPasswordEditField ? false : field.required}
                             step={field.step}
+                            min={field.type === "number" ? "0" : undefined}
+                            pattern={
+                              activeResource === "speakers" && field.name === "emri"
+                                ? LETTERS_ONLY_REGEX.source
+                                : activeResource === "categories" && field.name === "emri"
+                                  ? LETTERS_ONLY_REGEX.source
+                                  : activeResource === "users" && field.name === "emri"
+                                    ? LETTERS_ONLY_REGEX.source
+                                    : activeResource === "organizers" && field.name === "telefoni"
+                                      ? PHONE_REGEX.source
+                                      : undefined
+                            }
                           />
                         )}
                         {isPasswordEditField ? (

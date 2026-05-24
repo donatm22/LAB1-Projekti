@@ -1,4 +1,5 @@
 const db = require ("../../database/db");
+const { isLettersOnly, trimString } = require("../utils/validation");
 
 const getEventCategories = (req, res) =>{
     db.query('SELECT * FROM "EventCategories" ORDER BY id ASC', (err, result) =>{
@@ -35,7 +36,10 @@ const createEventCategories = (req, res) =>{
             message: "Emri nuk eshte plotesuar!"
         });
     }
-    db.query('INSERT INTO "EventCategories" (emri) VALUES ($1) RETURNING *', [emri], (err, result) =>{
+    if (!isLettersOnly(emri)) {
+        return res.status(400).json({ message: "Emri i kategorise duhet te permbaje vetem shkronja" });
+    }
+    db.query('INSERT INTO "EventCategories" (emri) VALUES ($1) RETURNING *', [trimString(emri)], (err, result) =>{
         if(err){
             return res.status(500).json({
                 error: err.message
@@ -56,7 +60,10 @@ const updateEventCategories = (req, res) =>{
             message: "Emri eshte i detyrueshem!"
         });
     }
-    db.query('UPDATE "EventCategories" SET emri = $1 WHERE id = $2 RETURNING *', [emri, id], (err, result) =>{
+    if (!isLettersOnly(emri)) {
+        return res.status(400).json({ message: "Emri i kategorise duhet te permbaje vetem shkronja" });
+    }
+    db.query('UPDATE "EventCategories" SET emri = $1 WHERE id = $2 RETURNING *', [trimString(emri), id], (err, result) =>{
         if(err){
             return res.status(500).json({
                 error: err.message

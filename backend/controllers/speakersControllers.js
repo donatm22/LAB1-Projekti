@@ -1,4 +1,8 @@
 const db = require("../../database/db");
+const {
+    isLettersOnly,
+    trimString,
+} = require("../utils/validation");
 
 const speakerSelectQuery = `
     SELECT s.*,
@@ -63,6 +67,12 @@ const createSpeakers = async (req, res) => {
         });
     }
 
+    if (!isLettersOnly(emri)) {
+        return res.status(400).json({
+            message: "Emri i speaker-it duhet te permbaje vetem shkronja"
+        });
+    }
+
     if (eventIds.length === 0) {
         return res.status(400).json({
             message: "Speaker-i duhet te lidhet me te pakten nje event"
@@ -88,7 +98,7 @@ const createSpeakers = async (req, res) => {
 
         const speakerResult = await client.query(
             'INSERT INTO "Speakers" (emri) VALUES ($1) RETURNING *',
-            [emri]
+            [trimString(emri)]
         );
 
         const speaker = speakerResult.rows[0];
@@ -132,6 +142,12 @@ const updateSpeakers = async (req, res) => {
         });
     }
 
+    if (!isLettersOnly(emri)) {
+        return res.status(400).json({
+            message: "Emri i speaker-it duhet te permbaje vetem shkronja"
+        });
+    }
+
     const client = await db.connect();
 
     try {
@@ -139,7 +155,7 @@ const updateSpeakers = async (req, res) => {
 
         const result = await client.query(
             'UPDATE "Speakers" SET emri = $1 WHERE id = $2 RETURNING *',
-            [emri, id]
+            [trimString(emri), id]
         );
 
         if (result.rows.length === 0) {

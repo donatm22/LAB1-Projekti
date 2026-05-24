@@ -2,9 +2,11 @@ const bcrypt = require("bcryptjs");
 const db = require("../../database/db");
 const { sanitizeUser } = require("./authController");
 const { revokeUserRefreshSessions } = require("../services/sessionService");
+const { isLettersOnly, isValidEmail, trimString } = require("../utils/validation");
 
 const isAdmin = (req) => req.user?.roli === "admin";
 const canAccessUser = (req, userId) => isAdmin(req) || String(req.user?.id) === String(userId);
+const allowedRoles = new Set(["user", "admin", "organizer", "attendee"]);
 
 const getUsers = (req, res) => {
   db.query(
@@ -50,11 +52,27 @@ const createUser = (req, res) => {
     return res.status(400).json({ message: "Ploteso emri, email, password dhe roli" });
   }
 
+  if (!isLettersOnly(emri)) {
+    return res.status(400).json({ message: "Emri duhet te permbaje vetem shkronja" });
+  }
+
+  if (!isValidEmail(email)) {
+    return res.status(400).json({ message: "Email nuk eshte valid" });
+  }
+
+  if (String(password).length < 6) {
+    return res.status(400).json({ message: "Password duhet te kete te pakten 6 karaktere" });
+  }
+
+  if (!allowedRoles.has(roli)) {
+    return res.status(400).json({ message: "Roli nuk eshte valid" });
+  }
+
   const hashedPassword = bcrypt.hashSync(password, 10);
 
   db.query(
     'INSERT INTO "Users" (emri, email, password, roli) VALUES ($1, $2, $3, $4) RETURNING id, emri, email, roli, created_at',
-    [emri, email, hashedPassword, roli],
+    [trimString(emri), trimString(email).toLowerCase(), hashedPassword, roli],
     (err, result) => {
       if (err) {
         if (err.code === "23505") {
@@ -84,6 +102,18 @@ const updateUser = (req, res) => {
     return res.status(400).json({ message: "Ploteso emri dhe email" });
   }
 
+  if (!isLettersOnly(emri)) {
+    return res.status(400).json({ message: "Emri duhet te permbaje vetem shkronja" });
+  }
+
+  if (!isValidEmail(email)) {
+    return res.status(400).json({ message: "Email nuk eshte valid" });
+  }
+
+  if (password && String(password).length < 6) {
+    return res.status(400).json({ message: "Password duhet te kete te pakten 6 karaktere" });
+  }
+
   db.query('SELECT * FROM "Users" WHERE id = $1 LIMIT 1', [id], (findErr, findResult) => {
     if (findErr) {
       return res.status(500).json({ error: findErr.message });
@@ -95,11 +125,14 @@ const updateUser = (req, res) => {
 
     const existingUser = findResult.rows[0];
     const nextRole = isAdmin(req) && roli ? roli : existingUser.roli;
+    if (!allowedRoles.has(nextRole)) {
+      return res.status(400).json({ message: "Roli nuk eshte valid" });
+    }
     const nextPassword = password ? bcrypt.hashSync(password, 10) : existingUser.password;
 
     db.query(
       'UPDATE "Users" SET emri = $1, email = $2, password = $3, roli = $4 WHERE id = $5 RETURNING *',
-      [emri, email, nextPassword, nextRole, id],
+      [trimString(emri), trimString(email).toLowerCase(), nextPassword, nextRole, id],
       async (updateErr, updateResult) => {
         if (updateErr) {
           if (updateErr.code === "23505") {

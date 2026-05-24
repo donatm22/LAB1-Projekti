@@ -2,6 +2,13 @@ const express = require('express');
 const verifyToken = require('../middleware/authMiddleware');
 const { sendEmailToUser } = require('../emails/simpleEmailService');
 const db = require('../../database/db');
+const {
+  isLettersOnly,
+  isValidDateTime,
+  isValidPhone,
+  toPositiveInteger,
+  trimString,
+} = require('../utils/validation');
 
 const router = express.Router();
 
@@ -174,6 +181,24 @@ router.post('/send-ticket-purchase', verifyToken, async (req, res) => {
       });
     }
 
+    const quantityValue = toPositiveInteger(ticketQuantity);
+    if (!quantityValue) {
+      return res.status(400).json({ message: 'ticketQuantity must be a positive number' });
+    }
+
+    if (!isValidDateTime(eventDate) && Number.isNaN(Date.parse(String(eventDate)))) {
+      return res.status(400).json({ message: 'eventDate must be a valid date' });
+    }
+
+    if (buyerPhone && !isValidPhone(buyerPhone)) {
+      return res.status(400).json({ message: 'buyerPhone is not valid' });
+    }
+
+    const buyerName = trimString(req.body.buyerName);
+    if (buyerName && !isLettersOnly(buyerName)) {
+      return res.status(400).json({ message: 'buyerName must contain only letters' });
+    }
+
     db.query(
       'SELECT emri, email FROM "Users" WHERE id = $1',
       [userId],
@@ -204,7 +229,7 @@ router.post('/send-ticket-purchase', verifyToken, async (req, res) => {
               <li><strong>Date:</strong> ${escapeHtml(eventDate)}</li>
               <li><strong>Ticket type:</strong> ${escapeHtml(ticketType)}</li>
               <li><strong>Section:</strong> ${escapeHtml(ticketSection || 'General Admission')}</li>
-              <li><strong>Quantity:</strong> ${escapeHtml(ticketQuantity)}</li>
+              <li><strong>Quantity:</strong> ${escapeHtml(quantityValue)}</li>
               <li><strong>Total paid:</strong> ${escapeHtml(orderTotal)}</li>
               <li><strong>Phone:</strong> ${escapeHtml(buyerPhone || 'Not provided')}</li>
             </ul>

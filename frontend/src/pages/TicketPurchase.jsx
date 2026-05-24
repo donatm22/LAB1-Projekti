@@ -254,6 +254,9 @@ const createTicketCode = () =>
     .slice(2, 6)
     .toUpperCase()}`;
 
+const LETTERS_ONLY_REGEX = /^[A-Za-zÀ-ÖØ-öø-ÿ\s'-.]+$/;
+const PHONE_REGEX = /^\+?[0-9\s()-]{7,20}$/;
+
 function TicketPurchase() {
   const { id } = useParams();
   const [apiEvent, setApiEvent] = useState(null);
@@ -355,10 +358,32 @@ function TicketPurchase() {
 
   const handleCheckoutChange = (e) => {
     const { name, value } = e.target;
+    let nextValue = value;
+
+    if (name === "name" || name === "cardName") {
+      nextValue = value.replace(/[^A-Za-zÀ-ÖØ-öø-ÿ\s'-.]/g, "");
+    }
+
+    if (name === "phone") {
+      nextValue = value.replace(/[^\d+\s()-]/g, "");
+    }
+
+    if (name === "cardNumber") {
+      nextValue = value.replace(/\D/g, "").slice(0, 16).replace(/(.{4})/g, "$1 ").trim();
+    }
+
+    if (name === "expiry") {
+      const digits = value.replace(/\D/g, "").slice(0, 4);
+      nextValue = digits.length > 2 ? `${digits.slice(0, 2)}/${digits.slice(2)}` : digits;
+    }
+
+    if (name === "cvc") {
+      nextValue = value.replace(/\D/g, "").slice(0, 4);
+    }
 
     setCheckout((current) => ({
       ...current,
-      [name]: value,
+      [name]: nextValue,
     }));
   };
 
@@ -408,12 +433,43 @@ function TicketPurchase() {
       return;
     }
 
+    if (!LETTERS_ONLY_REGEX.test(checkout.name.trim()) || !LETTERS_ONLY_REGEX.test(checkout.cardName.trim())) {
+      setCheckoutStatus("error");
+      setCheckoutMessage("Name fields can contain only letters.");
+      return;
+    }
+
+    if (checkout.phone && !PHONE_REGEX.test(checkout.phone.trim())) {
+      setCheckoutStatus("error");
+      setCheckoutMessage("Phone number is not valid.");
+      return;
+    }
+
+    if (checkout.cardNumber.replace(/\s/g, "").length !== 16) {
+      setCheckoutStatus("error");
+      setCheckoutMessage("Card number must contain 16 digits.");
+      return;
+    }
+
+    if (!/^\d{2}\/\d{2}$/.test(checkout.expiry)) {
+      setCheckoutStatus("error");
+      setCheckoutMessage("Expiry must be in MM/YY format.");
+      return;
+    }
+
+    if (!/^\d{3,4}$/.test(checkout.cvc)) {
+      setCheckoutStatus("error");
+      setCheckoutMessage("CVC must contain 3 or 4 digits.");
+      return;
+    }
+
     const newTicketCode = createTicketCode();
     const sectionLabel = isAnymaEvent
       ? `${selectedSection.level} ${selectedSection.label}`
       : selectedTicket.section;
 
     const emailPayload = {
+      buyerName: checkout.name.trim(),
       buyerPhone: checkout.phone || "Not provided",
       ticketCode: newTicketCode,
       eventTitle: event.title,
@@ -657,6 +713,7 @@ function TicketPurchase() {
                     onChange={handleCheckoutChange}
                     placeholder="Filan Fisteku"
                     required
+                    pattern={LETTERS_ONLY_REGEX.source}
                   />
                 </label>
                 <label>
@@ -678,6 +735,7 @@ function TicketPurchase() {
                     value={checkout.phone}
                     onChange={handleCheckoutChange}
                     placeholder="+383 44 000 000"
+                    pattern={PHONE_REGEX.source}
                   />
                 </label>
               </div>
@@ -693,6 +751,7 @@ function TicketPurchase() {
                     onChange={handleCheckoutChange}
                     placeholder="Filan Fisteku"
                     required
+                    pattern={LETTERS_ONLY_REGEX.source}
                   />
                 </label>
                 <label>
@@ -705,6 +764,7 @@ function TicketPurchase() {
                     inputMode="numeric"
                     placeholder="4242 4242 4242 4242"
                     maxLength="19"
+                    required
                   />
                 </label>
                 <div className="checkout-row">
@@ -715,9 +775,10 @@ function TicketPurchase() {
                       name="expiry"
                       value={checkout.expiry}
                       onChange={handleCheckoutChange}
-                      placeholder="MM/YY"
-                      maxLength="5"
-                    />
+                    placeholder="MM/YY"
+                    maxLength="5"
+                    required
+                  />
                   </label>
                   <label>
                     CVC
@@ -727,9 +788,10 @@ function TicketPurchase() {
                       value={checkout.cvc}
                       onChange={handleCheckoutChange}
                       inputMode="numeric"
-                      placeholder="123"
-                      maxLength="4"
-                    />
+                    placeholder="123"
+                    maxLength="4"
+                    required
+                  />
                   </label>
                 </div>
               </div>

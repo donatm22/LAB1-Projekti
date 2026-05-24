@@ -1,4 +1,10 @@
 const db = require("../../database/db");
+const {
+    isNonEmptyString,
+    isValidDateTime,
+    toPositiveInteger,
+    trimString,
+} = require("../utils/validation");
 
 const parseEventImages = (value) => {
     if (Array.isArray(value)) {
@@ -134,6 +140,23 @@ const createEvent = (req, res) =>{
         });
     }
 
+    const parsedCapacity = toPositiveInteger(kapaciteti);
+    if (!parsedCapacity) {
+        return res.status(400).json({ message: "Kapaciteti duhet te jete numer pozitiv" });
+    }
+
+    if (!isValidDateTime(data_fillimit) || !isValidDateTime(data_perfundimit)) {
+        return res.status(400).json({ message: "Datat e eventit duhet te jene valide" });
+    }
+
+    if (new Date(data_perfundimit) < new Date(data_fillimit)) {
+        return res.status(400).json({ message: "Data e perfundimit duhet te jete pas dates se fillimit" });
+    }
+
+    if (![titulli, pershkrimi, lokacioni, statusi].every(isNonEmptyString)) {
+        return res.status(400).json({ message: "Titulli, pershkrimi, lokacioni dhe statusi jane te detyrueshme" });
+    }
+
     const creatorId = isAdmin(req) && req.body.owner_user_id ? req.body.owner_user_id : req.user?.id;
 
     db.query('SELECT id FROM "Organizers" WHERE id = $1', [organizer_id], (orgErr, orgRes) => {
@@ -164,7 +187,7 @@ const createEvent = (req, res) =>{
 
             const sql =
             'INSERT INTO "Events" (titulli, pershkrimi, data_fillimit, data_perfundimit, lokacioni, kapaciteti, statusi, organizer_id, organizer_entity_id, category_id, imazhi) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11) RETURNING *';
-            const values = [titulli, pershkrimi, data_fillimit, data_perfundimit, lokacioni, kapaciteti, statusi, creatorId, organizer_id, category_id, imageValue];
+            const values = [trimString(titulli), trimString(pershkrimi), data_fillimit, data_perfundimit, trimString(lokacioni), parsedCapacity, trimString(statusi), creatorId, organizer_id, category_id, imageValue];
 
             db.query(sql, values, (err, result) => {
                 if (err){
@@ -192,6 +215,23 @@ const updateEvent = (req, res) =>{
         return res.status(400).json({
             message: "Vlerat jane te zbrazeta!"
         });
+    }
+
+    const parsedCapacity = toPositiveInteger(kapaciteti);
+    if (!parsedCapacity) {
+        return res.status(400).json({ message: "Kapaciteti duhet te jete numer pozitiv" });
+    }
+
+    if (!isValidDateTime(data_fillimit) || !isValidDateTime(data_perfundimit)) {
+        return res.status(400).json({ message: "Datat e eventit duhet te jene valide" });
+    }
+
+    if (new Date(data_perfundimit) < new Date(data_fillimit)) {
+        return res.status(400).json({ message: "Data e perfundimit duhet te jete pas dates se fillimit" });
+    }
+
+    if (![titulli, pershkrimi, lokacioni, statusi].every(isNonEmptyString)) {
+        return res.status(400).json({ message: "Titulli, pershkrimi, lokacioni dhe statusi jane te detyrueshme" });
     }
 
     const creatorId = isAdmin(req) && req.body.owner_user_id ? req.body.owner_user_id : req.user?.id;
@@ -239,7 +279,7 @@ const updateEvent = (req, res) =>{
 
                 const sql =
                 'UPDATE "Events" SET titulli = $1, pershkrimi = $2, data_fillimit = $3, data_perfundimit = $4, lokacioni = $5, kapaciteti = $6, statusi = $7, organizer_id = $8, organizer_entity_id = $9, category_id = $10, imazhi = $11 WHERE id = $12 RETURNING *';
-                const values = [titulli, pershkrimi, data_fillimit, data_perfundimit, lokacioni, kapaciteti, statusi, creatorId, organizer_id, category_id, imageValue, id];
+                const values = [trimString(titulli), trimString(pershkrimi), data_fillimit, data_perfundimit, trimString(lokacioni), parsedCapacity, trimString(statusi), creatorId, organizer_id, category_id, imageValue, id];
 
                 db.query(sql, values, (err, result) => {
                     if (err){

@@ -2,7 +2,7 @@ import React from "react";
 import { Link } from "react-router-dom";
 import "./EventCard.css";
 
-const EventCard = ({ id, category, speaker, title, location, date, image, isFeatured }) => {
+const EventCard = ({ id, category, title, location, date, image, isFeatured }) => {
   return (
     <Link
       to={`/events/${id}/tickets`}

@@ -1,4 +1,10 @@
 const db = require("../../database/db");
+const {
+    isNonEmptyString,
+    toPositiveInteger,
+    toPositiveNumber,
+    trimString,
+} = require("../utils/validation");
 
 const isAdmin = (req) => req.user?.roli === "admin";
 
@@ -57,6 +63,14 @@ const createTicket = (req, res) => {
         });
     }
 
+    const parsedPrice = toPositiveNumber(cmimi);
+    const parsedQuantity = toPositiveInteger(sasia);
+    if (!isNonEmptyString(tipi) || !parsedPrice || !parsedQuantity) {
+        return res.status(400).json({
+            message: "Tipi duhet te jete tekst, cmimi numer pozitiv dhe sasia numer pozitiv"
+        });
+    }
+
     verifyEventWriteAccess(req, event_id, (accessErr, allowed) => {
         if (accessErr) {
             return res.status(500).json({ error: accessErr.message });
@@ -68,7 +82,7 @@ const createTicket = (req, res) => {
 
         db.query(
             'INSERT INTO "Tickets" (event_id, tipi, cmimi, sasia) VALUES($1, $2, $3, $4) RETURNING *',
-            [event_id, tipi, cmimi, sasia],
+            [event_id, trimString(tipi), parsedPrice, parsedQuantity],
             (err, result) => {
                 if (err) {
                     return res.status(500).json({
@@ -99,6 +113,14 @@ const updateTicket = (req, res) => {
         });
     }
 
+    const parsedPrice = toPositiveNumber(cmimi);
+    const parsedQuantity = toPositiveInteger(sasia);
+    if (!isNonEmptyString(tipi) || !parsedPrice || !parsedQuantity) {
+        return res.status(400).json({
+            message: "Tipi duhet te jete tekst, cmimi numer pozitiv dhe sasia numer pozitiv"
+        });
+    }
+
     verifyEventWriteAccess(req, event_id, (accessErr, allowed) => {
         if (accessErr) {
             return res.status(500).json({ error: accessErr.message });
@@ -108,7 +130,7 @@ const updateTicket = (req, res) => {
             return res.status(403).json({ message: "Access denied" });
         }
 
-        const params = [event_id, tipi, cmimi, sasia, id];
+        const params = [event_id, trimString(tipi), parsedPrice, parsedQuantity, id];
         let sql = 'UPDATE "Tickets" SET event_id = $1, tipi = $2, cmimi = $3, sasia = $4 WHERE id = $5';
 
         if (!isAdmin(req)) {
