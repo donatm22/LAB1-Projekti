@@ -21,6 +21,7 @@ const FOOTER_LINKS = {
     { label: "Help Center", to: "/contact" },
     { label: "Contact Us", to: "/contact" },
     { label: "Refund Policy", to: "/refunds" },
+    { label: "FAQ", to: "/faq" },
     { label: "Accessibility", to: "/accessibility" },
     { label: "Terms of Use", to: "/terms" },
   ],
@@ -31,7 +32,7 @@ function Footer() {
     <footer className="footer">
       <div className="footer-inner">
         <div className="footer-brand">
-          <Link to="/" className="footer-logo">AURA</Link>
+          <Link to="/home" className="footer-logo">AURA</Link>
           <p className="footer-tagline">
             The considered guide to evenings worth having.
           </p>
