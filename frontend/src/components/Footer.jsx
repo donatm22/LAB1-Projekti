@@ -1,5 +1,5 @@
 import "./Footer.css";
-import { Link } from "react-router-dom";
+import { href, Link } from "react-router-dom";
 
 const FOOTER_LINKS = {
   Discover: [
@@ -15,14 +15,13 @@ const FOOTER_LINKS = {
     { label: "Our Team", to: "/about" },
     { label: "Partnerships", to: "/partnerships" },
     { label: "Press & Media", to: "/press" },
-    { label: "Careers", to: "/careers" },
+    { label: "Careers", to: "/career" },
   ],
   Support: [
     { label: "Help Center", to: "/contact" },
     { label: "Contact Us", to: "/contact" },
     { label: "Refund Policy", to: "/refunds" },
     { label: "FAQ", to: "/faq" },
-    { label: "Accessibility", to: "/accessibility" },
     { label: "Terms of Use", to: "/terms" },
   ],
 };

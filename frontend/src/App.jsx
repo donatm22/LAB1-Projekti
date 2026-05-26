@@ -36,6 +36,9 @@ const FAQ = lazy(() =>
 const AdminDashboard = lazy(() =>
   import(/* webpackChunkName: "page-admin" */ "./pages/AdminDashboard")
 );
+const Career = lazy(() =>
+  import(/* webpackChunkName: "page-admin" */ "./pages/Career")
+);
 const Account = lazy(() =>
   import(/* webpackChunkName: "page-account" */ "./pages/Account")
 );
@@ -89,7 +92,8 @@ function App() {
             <Route path="/socials" element={<Socials />} />
             <Route path="/events" element={<EventsPage />} />
             <Route path="/events/:id/tickets" element={<TicketPurchase />} />
-            <Route path="/faq" element={<FAQ />} />            
+            <Route path="/faq" element={<FAQ />} />      
+            <Route path="/career" element={<Career/>} />
             <Route path="/account" element={<Account />} />
             <Route path="/admin" element={<AdminDashboard />} />
           </Routes>
