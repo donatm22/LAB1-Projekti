@@ -297,3 +297,227 @@
   }
   .job-action { margin-top: 0.5rem; }
 }
+/* ─── ROLE DETAIL MODAL ─────────────────────────────────── */
+
+.role-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(26, 15, 10, 0.55);
+  backdrop-filter: blur(4px);
+  z-index: 1000;
+  display: flex;
+  align-items: flex-start;
+  justify-content: flex-end;
+  animation: overlayFadeIn 0.25s ease;
+}
+
+@keyframes overlayFadeIn {
+  from { opacity: 0; }
+  to   { opacity: 1; }
+}
+
+.role-panel {
+  background: var(--color-bg);
+  width: min(600px, 100vw);
+  height: 100vh;
+  display: flex;
+  flex-direction: column;
+  box-shadow: -8px 0 40px rgba(26, 15, 10, 0.15);
+  animation: panelSlideIn 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+  overflow: hidden;
+}
+
+@keyframes panelSlideIn {
+  from { transform: translateX(100%); }
+  to   { transform: translateX(0); }
+}
+
+.role-panel-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 1rem;
+  padding: 2.5rem 2.5rem 2rem;
+  border-bottom: 1px solid var(--color-border);
+  flex-shrink: 0;
+}
+
+.role-dept-tag {
+  font-size: 0.75rem;
+  font-weight: 700;
+  color: var(--color-accent-light);
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  display: block;
+  margin-bottom: 0.5rem;
+}
+
+.role-panel-title {
+  font-size: 1.65rem;
+  font-weight: 700;
+  letter-spacing: -0.02em;
+  line-height: 1.15;
+  color: var(--color-ink);
+  margin-bottom: 1rem;
+}
+
+.role-meta-row {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  flex-wrap: wrap;
+}
+
+.role-location-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  font-size: 0.9rem;
+  color: var(--color-ink-mid);
+}
+
+.role-close-btn {
+  background: none;
+  border: 1px solid var(--color-border-mid);
+  border-radius: var(--radius-sm);
+  width: 40px;
+  height: 40px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  color: var(--color-ink-muted);
+  flex-shrink: 0;
+  transition: var(--transition);
+}
+
+.role-close-btn:hover {
+  background: var(--color-bg-dark);
+  border-color: var(--color-bg-dark);
+  color: var(--color-white-full);
+}
+
+.role-panel-body {
+  flex: 1;
+  overflow-y: auto;
+  padding: 2.5rem;
+  display: flex;
+  flex-direction: column;
+  gap: 2.5rem;
+  scroll-behavior: smooth;
+}
+
+.role-panel-body::-webkit-scrollbar {
+  width: 4px;
+}
+.role-panel-body::-webkit-scrollbar-track {
+  background: transparent;
+}
+.role-panel-body::-webkit-scrollbar-thumb {
+  background: var(--color-ink-faint);
+  border-radius: 2px;
+}
+
+
+
+.role-section-label {
+  font-size: 0.75rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  color: var(--color-ink-muted);
+  margin-bottom: 1rem;
+}
+
+.role-description {
+  font-size: 1rem;
+  line-height: 1.7;
+  color: var(--color-ink-mid);
+}
+
+.role-list {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.role-list li {
+  font-size: 0.95rem;
+  line-height: 1.55;
+  color: var(--color-ink-mid);
+  padding-left: 1.25rem;
+  position: relative;
+}
+
+.role-list li::before {
+  content: '';
+  position: absolute;
+  left: 0;
+  top: 0.6em;
+  width: 5px;
+  height: 5px;
+  border-radius: 50%;
+  background: var(--color-accent-light);
+}
+
+.role-panel-footer {
+  padding: 1.75rem 2.5rem;
+  border-top: 1px solid var(--color-border);
+  display: flex;
+  gap: 1rem;
+  align-items: center;
+  flex-shrink: 0;
+  background: var(--color-bg-warm);
+}
+
+.btn-apply {
+  background: var(--color-bg-dark);
+  color: var(--color-white-full);
+  border: none;
+  padding: 0.85rem 2rem;
+  font-size: 0.82rem;
+  font-weight: 700;
+  letter-spacing: 0.07em;
+  cursor: pointer;
+  border-radius: var(--radius-sm);
+  transition: var(--transition);
+}
+
+.btn-apply:hover {
+  background: var(--color-accent);
+  transform: translateY(-1px);
+}
+
+.btn-ghost {
+  background: none;
+  border: none;
+  color: var(--color-ink-muted);
+  font-size: 0.82rem;
+  font-weight: 600;
+  letter-spacing: 0.05em;
+  cursor: pointer;
+  padding: 0.85rem 1rem;
+  transition: var(--transition);
+}
+
+.btn-ghost:hover {
+  color: var(--color-ink);
+}
+
+@media (max-width: 640px) {
+  .role-panel {
+    width: 100vw;
+  }
+  .role-panel-header,
+  .role-panel-body,
+  .role-panel-footer {
+    padding-left: 1.5rem;
+    padding-right: 1.5rem;
+  }
+  .role-panel-title {
+    font-size: 1.35rem;
+  }
+}
