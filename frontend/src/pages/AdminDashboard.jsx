@@ -196,8 +196,20 @@ const validateResourceForm = (resource, values, isEditing) => {
       return "Start date dhe end date duhet te jene data valide.";
     }
 
-    if (new Date(values.data_perfundimit) < new Date(values.data_fillimit)) {
-      return "End date duhet te jete pas start date.";
+    const startDate = new Date(values.data_fillimit);
+    const endDate = new Date(values.data_perfundimit);
+    const now = new Date();
+
+    if (startDate < now) {
+      return "Start date nuk mund te jete ne te kaluaren.";
+    }
+
+    if (endDate < now) {
+      return "End date nuk mund te jete ne te kaluaren.";
+    }
+
+    if (endDate < startDate) {
+      return "End date duhet te jete pas ose e barabarte me start date.";
     }
   }
 
@@ -382,6 +394,22 @@ function AdminDashboard() {
   const [error, setError] = useState("");
   const [success, setSuccess] = useState("");
   const [eventImageFiles, setEventImageFiles] = useState([]);
+  const [searchQueries, setSearchQueries] = useState({
+    events: "",
+    speakers: "",
+    tickets: "",
+    users: "",
+    categories: "",
+    organizers: "",
+  });
+  const [sortState, setSortState] = useState({
+    events: { column: null, dir: "asc" },
+    speakers: { column: null, dir: "asc" },
+    tickets: { column: null, dir: "asc" },
+    users: { column: null, dir: "asc" },
+    categories: { column: null, dir: "asc" },
+    organizers: { column: null, dir: "asc" },
+  });
 
   const token = tokenStorage.getToken();
   const currentUser = tokenStorage.getUser();
@@ -642,6 +670,53 @@ function AdminDashboard() {
   const activeColumns = TABLE_COLUMNS[activeResource];
   const isEditingActive = Boolean(editingId[activeResource]);
 
+  const displayedItems = useMemo(() => {
+    const items = activeItems || [];
+    const query = (searchQueries[activeResource] || "").trim().toLowerCase();
+
+    const filtered = items.filter((item) => {
+      if (!query) return true;
+      return (activeColumns || []).some((col) =>
+        String(item[col] ?? "").toLowerCase().includes(query)
+      );
+    });
+
+    const sort = sortState[activeResource] || {};
+    if (!sort || !sort.column) return filtered;
+
+    const sorted = [...filtered].sort((a, b) => {
+      const aRaw = a[sort.column];
+      const bRaw = b[sort.column];
+
+      const aStr = aRaw === null || aRaw === undefined ? "" : String(aRaw).trim();
+      const bStr = bRaw === null || bRaw === undefined ? "" : String(bRaw).trim();
+
+      const aFirst = aStr.charAt(0).toLowerCase();
+      const bFirst = bStr.charAt(0).toLowerCase();
+
+      let cmp = aFirst.localeCompare(bFirst);
+      if (cmp === 0) cmp = aStr.localeCompare(bStr);
+
+      return sort.dir === "desc" ? -cmp : cmp;
+    });
+
+    return sorted;
+  }, [activeItems, activeColumns, searchQueries, activeResource, sortState]);
+
+  const handleHeaderSort = (column) => {
+    setSortState((cur) => {
+      const curState = cur[activeResource] || { column: null, dir: "asc" };
+      if (curState.column === column) {
+        return {
+          ...cur,
+          [activeResource]: { column, dir: curState.dir === "asc" ? "desc" : "asc" },
+        };
+      }
+
+      return { ...cur, [activeResource]: { column, dir: "asc" } };
+    });
+  };
+
   return (
     <div className="admin-page">
       <Navbar />
@@ -856,14 +931,25 @@ function AdminDashboard() {
                   <h2>{RESOURCE_CONFIG[activeResource].label}</h2>
                   <p>{RESOURCE_CONFIG[activeResource].description}</p>
                 </div>
-                <button type="button" className="ghost-btn" onClick={loadDashboard}>
-                  Refresh
-                </button>
+                <div style={{display: "flex", gap: 12, alignItems: "center"}}>
+                  <input
+                    aria-label={`Search ${RESOURCE_CONFIG[activeResource].label}`}
+                    className="resource-search"
+                    placeholder={`Search ${RESOURCE_CONFIG[activeResource].label}...`}
+                    value={searchQueries[activeResource] || ""}
+                    onChange={(e) =>
+                      setSearchQueries((cur) => ({ ...cur, [activeResource]: e.target.value }))
+                    }
+                  />
+                  <button type="button" className="ghost-btn" onClick={loadDashboard}>
+                    Refresh
+                  </button>
+                </div>
               </div>
 
               {loading ? (
                 <div className="empty-state">Loading data...</div>
-              ) : activeItems.length === 0 ? (
+              ) : displayedItems.length === 0 ? (
                 <div className="empty-state">{RESOURCE_CONFIG[activeResource].empty}</div>
               ) : (
                 <div className="table-wrap">
@@ -871,13 +957,22 @@ function AdminDashboard() {
                     <thead>
                       <tr>
                         {activeColumns.map((column) => (
-                          <th key={column}>{prettifyKey(column)}</th>
+                          <th
+                            key={column}
+                            className="clickable-header"
+                            onClick={() => handleHeaderSort(column)}
+                          >
+                            {prettifyKey(column)}
+                            {sortState[activeResource]?.column === column ? (
+                              sortState[activeResource].dir === "asc" ? " \u25B2" : " \u25BC"
+                            ) : null}
+                          </th>
                         ))}
                         <th>Actions</th>
                       </tr>
                     </thead>
                     <tbody>
-                      {activeItems.map((item) => (
+                      {displayedItems.map((item) => (
                         <tr key={item.id}>
                           {activeColumns.map((column) => (
                             <td key={`${item.id}-${column}`}>

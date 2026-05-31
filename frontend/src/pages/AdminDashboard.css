@@ -188,6 +188,15 @@
   color: #1b2430;
 }
 
+.resource-search {
+  border: 1px solid rgba(27,36,48,0.12);
+  border-radius: 12px;
+  padding: 8px 12px;
+  min-width: 240px;
+  background: rgba(251,249,245,0.95);
+  color: #1b2430;
+}
+
 .form-grid {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
@@ -299,6 +308,11 @@
   font-size: 13px;
   text-transform: uppercase;
   letter-spacing: 0.06em;
+}
+
+.clickable-header {
+  cursor: pointer;
+  user-select: none;
 }
 
 .cell-content {
