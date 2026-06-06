@@ -1,88 +1,104 @@
 const db = require("../../database/db");
 
-const getEventSchedules = (req, res) => {
-  db.query('SELECT * FROM "EventSchedules" ORDER BY id ASC', (err, result) => {
-    if (err) {
-      return res.status(500).json({ error: err.message });
-    }
-
-    res.json(result.rows);
-  });
+const getEventSchedules = async (req, res) => {
+  try {
+    const schedules = await db.eventSchedules.findMany({
+      orderBy: { id: "asc" },
+    });
+    return res.json(schedules);
+  } catch (err) {
+    return res.status(500).json({ error: err.message });
+  }
 };
 
-const getEventSchedulesById = (req, res) => {
-  const { id } = req.params;
+const getEventSchedulesById = async (req, res) => {
+  try {
+    const { id } = req.params;
 
-  db.query('SELECT * FROM "EventSchedules" WHERE id = $1', [id], (err, result) => {
-    if (err) {
-      return res.status(500).json({ error: err.message });
-    }
+    const schedule = await db.eventSchedules.findUnique({
+      where: { id: id },
+    });
 
-    if (result.rows.length === 0) {
+    if (!schedule) {
       return res.status(404).json({ message: "Orari i eventit nuk u gjet" });
     }
 
-    res.json(result.rows[0]);
-  });
+    return res.json(schedule);
+  } catch (err) {
+    return res.status(500).json({ error: err.message });
+  }
 };
 
-const createEventSchedules = (req, res) => {
-  const { event_id, titulli_eventit, pershkrimi, ora_fillimit, ora_mbarimit, salla, speaker_id } = req.body;
+const createEventSchedules = async (req, res) => {
+  try {
+    const { event_id, titulli_eventit, pershkrimi, ora_fillimit, ora_mbarimit, salla, speaker_id } = req.body;
 
-  db.query(
-    'INSERT INTO "EventSchedules" (event_id, titulli_eventit, pershkrimi, ora_fillimit, ora_mbarimit, salla, speaker_id) VALUES ($1, $2, $3, $4, $5, $6, $7) RETURNING *',
-    [event_id || null, titulli_eventit || null, pershkrimi || null, ora_fillimit || null, ora_mbarimit || null, salla || null, speaker_id || null],
-    (err, result) => {
-      if (err) {
-        return res.status(500).json({ error: err.message });
-      }
+    const newSchedule = await db.eventSchedules.create({
+      data: {
+        event_id: event_id || null,
+        titulli_eventit: titulli_eventit || null,
+        pershkrimi: pershkrimi || null,
+        ora_fillimit: ora_fillimit ? new Date(ora_fillimit) : null,
+        ora_mbarimit: ora_mbarimit ? new Date(ora_mbarimit) : null,
+        salla: salla || null,
+        speaker_id: speaker_id || null,
+      },
+    });
 
-      res.status(201).json({
-        message: "Orari i eventit u shtua me sukses",
-        eventSchedule: result.rows[0]
-      });
-    }
-  );
+    return res.status(201).json({
+      message: "Orari i eventit u shtua me sukses",
+      eventSchedule: newSchedule,
+    });
+  } catch (err) {
+    return res.status(500).json({ error: err.message });
+  }
 };
 
-const updateEventSchedules = (req, res) => {
-  const { id } = req.params;
-  const { event_id, titulli_eventit, pershkrimi, ora_fillimit, ora_mbarimit, salla, speaker_id } = req.body;
+const updateEventSchedules = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { event_id, titulli_eventit, pershkrimi, ora_fillimit, ora_mbarimit, salla, speaker_id } = req.body;
 
-  db.query(
-    'UPDATE "EventSchedules" SET event_id = $1, titulli_eventit = $2, pershkrimi = $3, ora_fillimit = $4, ora_mbarimit = $5, salla = $6, speaker_id = $7 WHERE id = $8 RETURNING *',
-    [event_id || null, titulli_eventit || null, pershkrimi || null, ora_fillimit || null, ora_mbarimit || null, salla || null, speaker_id || null, id],
-    (err, result) => {
-      if (err) {
-        return res.status(500).json({ error: err.message });
-      }
+    const updatedSchedule = await db.eventSchedules.update({
+      where: { id: id },
+      data: {
+        event_id: event_id,
+        titulli_eventit: titulli_eventit,
+        pershkrimi: pershkrimi,
+        ora_fillimit: ora_fillimit ? new Date(ora_fillimit) : null,
+        ora_mbarimit: ora_mbarimit ? new Date(ora_mbarimit) : null,
+        salla: salla,
+        speaker_id: speaker_id,
+      },
+    });
 
-      if (result.rows.length === 0) {
-        return res.status(404).json({ message: "Orari i eventit nuk u gjet" });
-      }
-
-      res.json({
-        message: "Orari i eventit u perditesua me sukses",
-        eventSchedule: result.rows[0]
-      });
-    }
-  );
-};
-
-const deleteEventSchedules = (req, res) => {
-  const { id } = req.params;
-
-  db.query('DELETE FROM "EventSchedules" WHERE id = $1', [id], (err, result) => {
-    if (err) {
-      return res.status(500).json({ error: err.message });
-    }
-
-    if (result.rowCount === 0) {
+    return res.json({
+      message: "Orari i eventit u perditesua me sukses",
+      eventSchedule: updatedSchedule,
+    });
+  } catch (err) {
+    if (err.code === "P2025") {
       return res.status(404).json({ message: "Orari i eventit nuk u gjet" });
     }
+    return res.status(500).json({ error: err.message });
+  }
+};
 
-    res.json({ message: "Orari i eventit u fshi me sukses" });
-  });
+const deleteEventSchedules = async (req, res) => {
+  try {
+    const { id } = req.params;
+
+    await db.eventSchedules.delete({
+      where: { id: id },
+    });
+
+    return res.json({ message: "Orari i eventit u fshi me sukses" });
+  } catch (err) {
+    if (err.code === "P2025") {
+      return res.status(404).json({ message: "Orari i eventit nuk u gjet" });
+    }
+    return res.status(500).json({ error: err.message });
+  }
 };
 
 module.exports = {
@@ -90,5 +106,5 @@ module.exports = {
   getEventSchedulesById,
   createEventSchedules,
   updateEventSchedules,
-  deleteEventSchedules
+  deleteEventSchedules,
 };

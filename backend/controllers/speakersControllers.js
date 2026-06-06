@@ -1,246 +1,222 @@
 const db = require("../../database/db");
 const {
-    isLettersOnly,
-    trimString,
+  isLettersOnly,
+  trimString,
 } = require("../utils/validation");
 
-const speakerSelectQuery = `
-    SELECT s.*,
-           COALESCE(
-               ARRAY_AGG(DISTINCT es.event_id) FILTER (WHERE es.event_id IS NOT NULL),
-               ARRAY[]::uuid[]
-           ) AS event_ids
-    FROM "Speakers" s
-    LEFT JOIN "Event_Speakers" es ON es.speaker_id = s.id
-`;
+const formatSpeakerResponse = (speaker) => {
+  if (!speaker) return null;
+  if (Array.isArray(speaker)) return speaker.map(formatSpeakerResponse);
+
+  const { Event_Speakers, ...speakerData } = speaker;
+  return {
+    ...speakerData,
+    event_ids: Event_Speakers ? Event_Speakers.map((es) => es.event_id) : [],
+  };
+};
 
 const normalizeEventIds = (value) => {
-    if (Array.isArray(value)) {
-        return value.map((item) => String(item || "").trim()).filter(Boolean);
-    }
+  if (Array.isArray(value)) {
+    return value.map((item) => String(item || "").trim()).filter(Boolean);
+  }
 
-    if (typeof value !== "string") {
-        return [];
-    }
+  if (typeof value !== "string") {
+    return [];
+  }
 
-    return value
-        .split(/\r?\n|,/)
-        .map((item) => item.trim())
-        .filter(Boolean);
+  return value
+    .split(/\r?\n|,/)
+    .map((item) => item.trim())
+    .filter(Boolean);
 };
 
-const getSpeakers = (req, res) => {
-    db.query(`${speakerSelectQuery} GROUP BY s.id ORDER BY s.id ASC`, (err, result) => {
-        if (err) {
-            return res.status(500).json({
-                error: err.message
-            });
-        }
-        res.json(result.rows);
+const getSpeakers = async (req, res) => {
+  try {
+    const speakers = await db.speakers.findMany({
+      include: {
+        Event_Speakers: {
+          select: { event_id: true },
+        },
+      },
+      orderBy: { id: "asc" },
     });
+
+    return res.json(formatSpeakerResponse(speakers));
+  } catch (err) {
+    return res.status(500).json({ error: err.message });
+  }
 };
 
-const getSpeakersById = (req, res) => {
+const getSpeakersById = async (req, res) => {
+  try {
     const { id } = req.params;
-    db.query(`${speakerSelectQuery} WHERE s.id = $1 GROUP BY s.id`, [id], (err, result) => {
-        if (err) {
-            return res.status(500).json({
-                error: err.message
-            });
-        }
-        if (result.rows.length === 0) {
-            return res.status(404).json({
-                message: "Speaker nuk u gjet"
-            });
-        }
-        res.json(result.rows[0]);
+
+    const speaker = await db.speakers.findUnique({
+      where: { id: id },
+      include: {
+        Event_Speakers: {
+          select: { event_id: true },
+        },
+      },
     });
+
+    if (!speaker) {
+      return res.status(404).json({ message: "Speaker nuk u gjet" });
+    }
+
+    return res.json(formatSpeakerResponse(speaker));
+  } catch (err) {
+    return res.status(500).json({ error: err.message });
+  }
 };
 
 const createSpeakers = async (req, res) => {
+  try {
     const { emri } = req.body;
     const eventIds = normalizeEventIds(req.body.event_ids);
 
     if (!emri) {
-        return res.status(400).json({
-            message: "Emri eshte i detyrueshem"
-        });
+      return res.status(400).json({ message: "Emri eshte i detyrueshem" });
     }
 
     if (!isLettersOnly(emri)) {
-        return res.status(400).json({
-            message: "Emri i speaker-it duhet te permbaje vetem shkronja"
-        });
+      return res.status(400).json({ message: "Emri i speaker-it duhet te permbaje vetem shkronja" });
     }
 
     if (eventIds.length === 0) {
-        return res.status(400).json({
-            message: "Speaker-i duhet te lidhet me te pakten nje event"
-        });
+      return res.status(400).json({ message: "Speaker-i duhet te lidhet me te pakten nje event" });
     }
 
-    const client = await db.connect();
+    const newSpeaker = await db.$transaction(async (tx) => {
+      const existingEventsCount = await tx.events.count({
+        where: { id: { in: eventIds } },
+      });
 
-    try {
-        await client.query("BEGIN");
+      if (existingEventsCount !== eventIds.length) {
+        throw new Error("400:Nje ose me shume evente nuk u gjeten");
+      }
 
-        const eventCheck = await client.query(
-            'SELECT id FROM "Events" WHERE id = ANY($1::uuid[])',
-            [eventIds]
-        );
+      return await tx.speakers.create({
+        data: {
+          emri: trimString(emri),
+          Event_Speakers: {
+            create: eventIds.map((eventId) => ({
+              event_id: eventId,
+            })),
+          },
+        },
+        include: {
+          Event_Speakers: { select: { event_id: true } },
+        },
+      });
+    });
 
-        if (eventCheck.rows.length !== eventIds.length) {
-            await client.query("ROLLBACK");
-            return res.status(400).json({
-                message: "Nje ose me shume evente nuk u gjeten"
-            });
-        }
-
-        const speakerResult = await client.query(
-            'INSERT INTO "Speakers" (emri) VALUES ($1) RETURNING *',
-            [trimString(emri)]
-        );
-
-        const speaker = speakerResult.rows[0];
-
-        await Promise.all(
-            eventIds.map((eventId) =>
-                client.query(
-                    'INSERT INTO "Event_Speakers" (event_id, speaker_id) VALUES ($1, $2)',
-                    [eventId, speaker.id]
-                )
-            )
-        );
-
-        await client.query("COMMIT");
-
-        return res.status(201).json({
-            message: "Speaker-i u shtua me sukses",
-            speaker: {
-                ...speaker,
-                event_ids: eventIds
-            }
-        });
-    } catch (err) {
-        await client.query("ROLLBACK");
-        return res.status(500).json({
-            error: err.message
-        });
-    } finally {
-        client.release();
+    return res.status(201).json({
+      message: "Speaker-i u shtua me sukses",
+      speaker: formatSpeakerResponse(newSpeaker),
+    });
+  } catch (err) {
+    if (err.message.startsWith("400:")) {
+      return res.status(400).json({ message: err.message.replace("400:", "") });
     }
+    return res.status(500).json({ error: err.message });
+  }
 };
 
 const updateSpeakers = async (req, res) => {
+  try {
     const { id } = req.params;
     const { emri } = req.body;
     const eventIds = normalizeEventIds(req.body.event_ids);
 
     if (!emri) {
-        return res.status(400).json({
-            message: "Emri eshte i detyrueshem"
-        });
+      return res.status(400).json({ message: "Emri eshte i detyrueshem" });
     }
 
     if (!isLettersOnly(emri)) {
-        return res.status(400).json({
-            message: "Emri i speaker-it duhet te permbaje vetem shkronja"
-        });
+      return res.status(400).json({ message: "Emri i speaker-it duhet te permbaje vetem shkronja" });
     }
 
-    const client = await db.connect();
+    const updatedSpeaker = await db.$transaction(async (tx) => {
+      const currentSpeaker = await tx.speakers.findUnique({ where: { id } });
+      if (!currentSpeaker) {
+        throw new Error("404:Speaker nuk u gjet");
+      }
 
-    try {
-        await client.query("BEGIN");
+      const updateData = { emri: trimString(emri) };
 
-        const result = await client.query(
-            'UPDATE "Speakers" SET emri = $1 WHERE id = $2 RETURNING *',
-            [trimString(emri), id]
-        );
+      if (eventIds.length > 0) {
+        const existingEventsCount = await tx.events.count({
+          where: { id: { in: eventIds } },
+        });
 
-        if (result.rows.length === 0) {
-            await client.query("ROLLBACK");
-            return res.status(404).json({
-                message:"Speaker nuk u gjet"
-            });
+        if (existingEventsCount !== eventIds.length) {
+          throw new Error("400:Nje ose me shume evente nuk u gjeten");
         }
 
-        if (eventIds.length > 0) {
-            const eventCheck = await client.query(
-                'SELECT id FROM "Events" WHERE id = ANY($1::uuid[])',
-                [eventIds]
-            );
-
-            if (eventCheck.rows.length !== eventIds.length) {
-                await client.query("ROLLBACK");
-                return res.status(400).json({
-                    message: "Nje ose me shume evente nuk u gjeten"
-                });
-            }
-
-            await client.query('DELETE FROM "Event_Speakers" WHERE speaker_id = $1', [id]);
-
-            await Promise.all(
-                eventIds.map((eventId) =>
-                    client.query(
-                        'INSERT INTO "Event_Speakers" (event_id, speaker_id) VALUES ($1, $2)',
-                        [eventId, id]
-                    )
-                )
-            );
-        }
-
-        await client.query("COMMIT");
-
-        return res.status(200).json({
-            message:"Speaker-i u perditesua me sukses",
-            speaker: {
-                ...result.rows[0],
-                event_ids: eventIds.length > 0 ? eventIds : undefined
-            }
+        await tx.event_Speakers.deleteMany({
+          where: { speaker_id: id },
         });
-    } catch (err) {
-        await client.query("ROLLBACK");
-        return res.status(500).json({
-            error: err.message
-        });
-    } finally {
-        client.release();
+
+        updateData.Event_Speakers = {
+          create: eventIds.map((eventId) => ({
+            event_id: eventId,
+          })),
+        };
+      }
+
+      return await tx.speakers.update({
+        where: { id },
+        data: updateData,
+        include: {
+          Event_Speakers: { select: { event_id: true } },
+        },
+      });
+    });
+
+    return res.status(200).json({
+      message: "Speaker-i u perditesua me sukses",
+      speaker: formatSpeakerResponse(updatedSpeaker),
+    });
+  } catch (err) {
+    if (err.message.startsWith("404:")) {
+      return res.status(404).json({ message: err.message.replace("404:", "") });
     }
+    if (err.message.startsWith("400:")) {
+      return res.status(400).json({ message: err.message.replace("400:", "") });
+    }
+    return res.status(500).json({ error: err.message });
+  }
 };
 
-const deleteSpeakers = (req, res) =>{
-    const {id} = req.params;
+const deleteSpeakers = async (req, res) => {
+  try {
+    const { id } = req.params;
     const isOrganizer = req.user?.roli === "organizer";
 
-    // Only admins can delete speakers
     if (isOrganizer) {
-        return res.status(403).json({
-            message: "Access denied. Only admins can delete speakers."
-        });
+      return res.status(403).json({
+        message: "Access denied. Only admins can delete speakers.",
+      });
     }
-    
-    db.query('DELETE FROM "Speakers" WHERE id = $1', [id], (err, result) =>{
-        if(err){
-            return res.status(500).json({
-                error: err.message
-            });
-        }
-        if(result.rowCount === 0){
-            return res.status(404).json({
-                message:" Speaker nuk u fshi me sukses!"
-            });
-        }
-        res.status(200).json({
-            message: "Speaker eshte fshire me sukses"
-        });
+
+    await db.speakers.delete({
+      where: { id },
     });
+
+    return res.status(200).json({ message: "Speaker eshte fshire me sukses" });
+  } catch (err) {
+    if (err.code === "P2025") {
+      return res.status(404).json({ message: "Speaker nuk u fshi me sukses!" });
+    }
+    return res.status(500).json({ error: err.message });
+  }
 };
 
 module.exports = {
-    getSpeakers,
-    getSpeakersById,
-    createSpeakers,
-    updateSpeakers,
-    deleteSpeakers
+  getSpeakers,
+  getSpeakersById,
+  createSpeakers,
+  updateSpeakers,
+  deleteSpeakers,
 };

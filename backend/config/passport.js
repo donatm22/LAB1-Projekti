@@ -1,58 +1,50 @@
+// backend/config/passport.js
 const passport = require("passport");
 const { Strategy: LocalStrategy } = require("passport-local");
 const bcrypt = require("bcryptjs");
 const db = require("../../database/db");
 
-const getUserByEmail = (email) =>
-  new Promise((resolve, reject) => {
-    db.query('SELECT * FROM "Users" WHERE email = $1 LIMIT 1', [email], (err, result) => {
-      if (err) {
-        reject(err);
-        return;
-      }
-
-      resolve(result.rows[0] || null);
-    });
+const getUserByEmail = async (email) => {
+  if (!email) return null;
+  return await db.users.findFirst({
+    where: { email: email.toLowerCase().trim() },
   });
+};
 
-const getUserById = (id) =>
-  new Promise((resolve, reject) => {
-    db.query('SELECT * FROM "Users" WHERE id = $1 LIMIT 1', [id], (err, result) => {
-      if (err) {
-        reject(err);
-        return;
-      }
-
-      resolve(result.rows[0] || null);
-    });
+const getUserById = async (id) => {
+  if (!id) return null;
+  return await db.users.findUnique({
+    where: { id: id },
   });
+};
 
 passport.use(
   new LocalStrategy(
     {
       usernameField: "email",
-      passwordField: "password"
+      passwordField: "password",
     },
-    (email, password, done) => {
-      getUserByEmail(email)
-        .then((user) => {
-          if (!user) {
-            return done(null, false, { message: "Invalid email or password" });
-          }
+    async (email, password, done) => {
+      try {
+        const user = await getUserByEmail(email);
 
-          const isHashedPassword =
-            typeof user.password === "string" && user.password.startsWith("$2");
-          const isMatch = isHashedPassword
-            ? bcrypt.compareSync(password, user.password)
-            : password === user.password;
+        if (!user) {
+          return done(null, false, { message: "Invalid email or password" });
+        }
 
-          if (!isMatch) {
-            return done(null, false, { message: "Invalid email or password" });
-          }
+        const isHashedPassword = typeof user.password === "string" && user.password.startsWith("$2");
+        const isMatch = isHashedPassword
+          ? await bcrypt.compare(password, user.password)
+          : password === user.password;
 
-          return done(null, user);
-        })
-        .catch((err) => done(err));
+        if (!isMatch) {
+          return done(null, false, { message: "Invalid email or password" });
+        }
+
+        return done(null, user);
+      } catch (err) {
+        return done(err);
+      }
     }
   )
 );
@@ -61,10 +53,13 @@ passport.serializeUser((user, done) => {
   done(null, user.id);
 });
 
-passport.deserializeUser((id, done) => {
-  getUserById(id)
-    .then((user) => done(null, user || false))
-    .catch((err) => done(err));
+passport.deserializeUser(async (id, done) => {
+  try {
+    const user = await getUserById(id);
+    done(null, user || false);
+  } catch (err) {
+    done(err);
+  }
 });
 
 module.exports = passport;

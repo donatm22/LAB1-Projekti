@@ -6,7 +6,6 @@ import {
   dashboardApi,
   eventCategoriesApi,
   eventsApi,
-  organizersApi,
   speakersApi,
   ticketsApi,
   tokenStorage,
@@ -44,12 +43,6 @@ const RESOURCE_CONFIG = {
     empty: "No categories found.",
     singular: "category",
   },
-  organizers: {
-    label: "Organizers",
-    description: "Maintain organizer details used by events.",
-    empty: "No organizers found.",
-    singular: "organizer",
-  },
 };
 
 const EMPTY_FORMS = {
@@ -61,7 +54,6 @@ const EMPTY_FORMS = {
     lokacioni: "",
     kapaciteti: "",
     statusi: "",
-    organizer_id: "",
     category_id: "",
     imazhi: "",
   },
@@ -84,13 +76,6 @@ const EMPTY_FORMS = {
   categories: {
     emri: "",
   },
-  organizers: {
-    emri_organizates: "",
-    pershkrimi: "",
-    email: "",
-    telefoni: "",
-    website: "",
-  },
 };
 
 const FIELD_CONFIG = {
@@ -102,7 +87,6 @@ const FIELD_CONFIG = {
     { name: "lokacioni", label: "Location", type: "text", required: true },
     { name: "kapaciteti", label: "Capacity", type: "number", required: true },
     { name: "statusi", label: "Status", type: "text", required: true, placeholder: "active" },
-    { name: "organizer_id", label: "Organizer", type: "select", required: true },
     { name: "category_id", label: "Category", type: "select", required: true },
     {
       name: "imazhi",
@@ -137,22 +121,14 @@ const FIELD_CONFIG = {
   categories: [
     { name: "emri", label: "Name", type: "text", required: true },
   ],
-  organizers: [
-    { name: "emri_organizates", label: "Organization", type: "text", required: false },
-    { name: "pershkrimi", label: "Description", type: "textarea", required: false },
-    { name: "email", label: "Email", type: "email", required: false },
-    { name: "telefoni", label: "Phone", type: "text", required: false },
-    { name: "website", label: "Website", type: "url", required: false },
-  ],
 };
 
 const TABLE_COLUMNS = {
-  events: ["id", "titulli", "lokacioni", "statusi", "kapaciteti", "organizer_id", "category_id"],
+  events: ["id", "titulli", "lokacioni", "statusi", "kapaciteti", "displayOrganizer", "category_id"],
   speakers: ["id", "emri"],
   tickets: ["id", "event_id", "tipi", "cmimi", "sasia"],
   users: ["id", "emri", "email", "roli"],
   categories: ["id", "emri"],
-  organizers: ["id", "emri_organizates", "email", "telefoni", "website"],
 };
 
 const apiMap = {
@@ -161,7 +137,6 @@ const apiMap = {
   tickets: ticketsApi,
   users: usersApi,
   categories: eventCategoriesApi,
-  organizers: organizersApi,
 };
 
 const RESPONSE_ITEM_KEYS = {
@@ -170,28 +145,21 @@ const RESPONSE_ITEM_KEYS = {
   tickets: "ticket",
   users: "user",
   categories: "eventCategories",
-  organizers: "organizer",
 };
 
 const formatDateTimeInput = (value) => {
-  if (!value) {
-    return "";
-  }
-
-  const normalized = String(value).replace(" ", "T");
-  return normalized.slice(0, 16);
+  if (!value) return "";
+  return String(value).replace(" ", "T").slice(0, 16);
 };
 
 const LETTERS_ONLY_REGEX = /^[A-Za-zÀ-ÖØ-öø-ÿ\s'-.]+$/;
 const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-const PHONE_REGEX = /^\+?[0-9\s()-]{7,20}$/;
 
 const validateResourceForm = (resource, values, isEditing) => {
   if (resource === "events") {
     if (!/^\d+$/.test(String(values.kapaciteti).trim()) || Number(values.kapaciteti) <= 0) {
       return "Capacity duhet te jete numer pozitiv.";
     }
-
     if (Number.isNaN(Date.parse(values.data_fillimit)) || Number.isNaN(Date.parse(values.data_perfundimit))) {
       return "Start date dhe end date duhet te jene data valide.";
     }
@@ -200,24 +168,15 @@ const validateResourceForm = (resource, values, isEditing) => {
     const endDate = new Date(values.data_perfundimit);
     const now = new Date();
 
-    if (startDate < now) {
-      return "Start date nuk mund te jete ne te kaluaren.";
-    }
-
-    if (endDate < now) {
-      return "End date nuk mund te jete ne te kaluaren.";
-    }
-
-    if (endDate < startDate) {
-      return "End date duhet te jete pas ose e barabarte me start date.";
-    }
+    if (startDate < now) return "Start date nuk mund te jete ne te kaluaren.";
+    if (endDate < now) return "End date nuk mund te jete ne te kaluaren.";
+    if (endDate < startDate) return "End date duhet te jete pas ose e barabarte me start date.";
   }
 
   if (resource === "tickets") {
     if (!/^\d+(\.\d+)?$/.test(String(values.cmimi).trim()) || Number(values.cmimi) <= 0) {
       return "Price duhet te jete numer pozitiv.";
     }
-
     if (!/^\d+$/.test(String(values.sasia).trim()) || Number(values.sasia) <= 0) {
       return "Quantity duhet te jete numer pozitiv.";
     }
@@ -232,42 +191,10 @@ const validateResourceForm = (resource, values, isEditing) => {
   }
 
   if (resource === "users") {
-    if (!LETTERS_ONLY_REGEX.test(String(values.emri).trim())) {
-      return "User name mund te permbaje vetem shkronja.";
-    }
-
-    if (!EMAIL_REGEX.test(String(values.email).trim())) {
-      return "Email nuk eshte valid.";
-    }
-
-    if (!isEditing && String(values.password || "").length < 6) {
-      return "Password duhet te kete te pakten 6 karaktere.";
-    }
-
-    if (isEditing && values.password && String(values.password).length < 6) {
-      return "Password duhet te kete te pakten 6 karaktere.";
-    }
-  }
-
-  if (resource === "organizers") {
-    if (values.email && !EMAIL_REGEX.test(String(values.email).trim())) {
-      return "Organizer email nuk eshte valid.";
-    }
-
-    if (values.telefoni && !PHONE_REGEX.test(String(values.telefoni).trim())) {
-      return "Phone duhet te permbaje vetem shifra dhe simbole valide.";
-    }
-
-    if (values.website) {
-      try {
-        const url = new URL(String(values.website).trim());
-        if (!["http:", "https:"].includes(url.protocol)) {
-          return "Website duhet te jete link valid.";
-        }
-      } catch {
-        return "Website duhet te jete link valid.";
-      }
-    }
+    if (!LETTERS_ONLY_REGEX.test(String(values.emri).trim())) return "User name mund te permbaje vetem shkronja.";
+    if (!EMAIL_REGEX.test(String(values.email).trim())) return "Email nuk eshte valid.";
+    if (!isEditing && String(values.password || "").length < 6) return "Password duhet te kete te pakten 6 karaktere.";
+    if (isEditing && values.password && String(values.password).length < 6) return "Password duhet te kete te pakten 6 karaktere.";
   }
 
   return "";
@@ -278,17 +205,9 @@ const normalizePayload = (resource, values, isEditing) => {
 
   if (resource === "events") {
     payload.kapaciteti = Number(payload.kapaciteti);
-    const toNumberIfNumeric = (v) => {
-      if (v === null || v === undefined || v === "") return v;
-      const s = String(v).trim();
-      return /^-?\d+$/.test(s) ? Number(s) : v;
-    };
-    payload.organizer_id = toNumberIfNumeric(payload.organizer_id);
-    payload.category_id = toNumberIfNumeric(payload.category_id);
   }
 
   if (resource === "tickets") {
-    payload.event_id = Number(payload.event_id);
     payload.cmimi = Number(payload.cmimi);
     payload.sasia = Number(payload.sasia);
   }
@@ -304,37 +223,22 @@ const normalizePayload = (resource, values, isEditing) => {
     delete payload.password;
   }
 
-  if (resource === "organizers") {
-    Object.keys(payload).forEach((key) => {
-      if (payload[key] === "") {
-        payload[key] = null;
-      }
-    });
-  }
-
   return payload;
 };
 
 const getFormValuesFromItem = (resource, item) => {
   const defaults = EMPTY_FORMS[resource];
-
-  if (!item) {
-    return defaults;
-  }
+  if (!item) return defaults;
 
   return {
     ...defaults,
     ...item,
     data_fillimit: formatDateTimeInput(item.data_fillimit),
     data_perfundimit: formatDateTimeInput(item.data_perfundimit),
-    organizer_id: item.organizer_id ?? "",
     category_id: item.category_id ?? "",
     event_id: item.event_id ?? "",
     imazhi: (() => {
-      if (!item.imazhi) {
-        return "";
-      }
-
+      if (!item.imazhi) return "";
       try {
         const parsed = JSON.parse(item.imazhi);
         return Array.isArray(parsed) ? parsed.join("\n") : item.imazhi;
@@ -350,13 +254,11 @@ const getFormValuesFromItem = (resource, item) => {
 const prettifyKey = (value) =>
   value
     .replaceAll("_", " ")
+    .replace("displayOrganizer", "Organizer")
     .replace(/\b\w/g, (char) => char.toUpperCase());
 
 const getSavedItem = (resource, response) => {
-  if (!response || typeof response !== "object") {
-    return null;
-  }
-
+  if (!response || typeof response !== "object") return null;
   const itemKey = RESPONSE_ITEM_KEYS[resource];
   return response[itemKey] || null;
 };
@@ -370,7 +272,6 @@ function AdminDashboard() {
     speakers: 0,
     tickets: 0,
     categories: 0,
-    organizers: 0,
   });
   const [data, setData] = useState({
     events: [],
@@ -378,7 +279,6 @@ function AdminDashboard() {
     tickets: [],
     users: [],
     categories: [],
-    organizers: [],
   });
   const [forms, setForms] = useState(EMPTY_FORMS);
   const [editingId, setEditingId] = useState({
@@ -387,7 +287,6 @@ function AdminDashboard() {
     tickets: null,
     users: null,
     categories: null,
-    organizers: null,
   });
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
@@ -400,7 +299,6 @@ function AdminDashboard() {
     tickets: "",
     users: "",
     categories: "",
-    organizers: "",
   });
   const [sortState, setSortState] = useState({
     events: { column: null, dir: "asc" },
@@ -408,17 +306,22 @@ function AdminDashboard() {
     tickets: { column: null, dir: "asc" },
     users: { column: null, dir: "asc" },
     categories: { column: null, dir: "asc" },
-    organizers: { column: null, dir: "asc" },
   });
+  const [filters, setFilters] = useState({
+  events: { category_id: "" },
+  speakers: { event_id: "" },
+  tickets: { tipi: "", event_id: "" },
+  users: { roli: "" },
+  categories: {},
+});
 
   const token = tokenStorage.getToken();
   const currentUser = tokenStorage.getUser();
   const isOrganizer = currentUser?.roli === "organizer";
+
   const visibleResourceEntries = useMemo(() => {
     return Object.entries(RESOURCE_CONFIG).filter(([key]) => {
-      if (isOrganizer && key === "users") {
-        return false;
-      }
+      if (isOrganizer && key === "users") return false;
       return true;
     });
   }, [isOrganizer]);
@@ -432,10 +335,6 @@ function AdminDashboard() {
 
   const selectOptions = useMemo(
     () => ({
-      organizer_id: data.organizers.map((organizer) => ({
-        value: organizer.id,
-        label: organizer.emri_organizates || `Organizer #${organizer.id}`,
-      })),
       category_id: data.categories.map((category) => ({
         value: category.id,
         label: category.emri,
@@ -458,27 +357,36 @@ function AdminDashboard() {
     setError("");
 
     try {
-      const [statsData, events, speakers, tickets, categories, organizers, usersResult] =
+      const [statsData, events, speakers, tickets, categories, usersResult] =
         await Promise.all([
           dashboardApi.getStats(token),
-          eventsApi.getManaged(token),
+          isOrganizer ? eventsApi.getManaged(token) : eventsApi.getAll(token),
           speakersApi.getAll(),
           ticketsApi.getAll(),
           eventCategoriesApi.getAll(),
-          organizersApi.getAll(),
-           token ? usersApi.getAll(token).catch(() => null) : Promise.resolve(null),
+          token ? usersApi.getAll(token).catch(() => null) : Promise.resolve(null),
         ]);
 
+      const fetchedEvents = Array.isArray(events) ? events : [];
+      const fetchedTickets = Array.isArray(tickets) ? tickets : [];
+
+      const filteredTickets = isOrganizer
+        ? fetchedTickets.filter((ticket) => fetchedEvents.some((e) => e.id === ticket.event_id))
+        : fetchedTickets;
+
       setStats({
-        ...statsData,
         users: isOrganizer ? 0 : Array.isArray(usersResult) ? usersResult.length : statsData.users,
+        events: fetchedEvents.length,
+        speakers: Array.isArray(speakers) ? speakers.length : 0,
+        tickets: filteredTickets.length,
+        categories: Array.isArray(categories) ? categories.length : 0,
       });
+
       setData({
-        events: Array.isArray(events) ? events : [],
+        events: fetchedEvents,
         speakers: Array.isArray(speakers) ? speakers : [],
-        tickets: Array.isArray(tickets) ? tickets : [],
+        tickets: filteredTickets, // Out-of-band records are blocked from render tables
         categories: Array.isArray(categories) ? categories : [],
-        organizers: Array.isArray(organizers) ? organizers : [],
         users: Array.isArray(usersResult) ? usersResult : [],
       });
     } catch (loadError) {
@@ -542,10 +450,7 @@ function AdminDashboard() {
   const handleDelete = async (resource, id) => {
     const label = RESOURCE_CONFIG[resource].singular;
     const confirmed = window.confirm(`Delete this ${label}?`);
-
-    if (!confirmed) {
-      return;
-    }
+    if (!confirmed) return;
 
     setError("");
     setSuccess("");
@@ -570,7 +475,6 @@ function AdminDashboard() {
 
     try {
       const isEditing = Boolean(editingId[resource]);
-      
       const formValues = forms[resource];
       const activeFields = FIELD_CONFIG[resource] || [];
       const emptyFields = [];
@@ -581,8 +485,7 @@ function AdminDashboard() {
           if (
             value === null ||
             value === undefined ||
-            (typeof value === "string" && value.trim() === "") ||
-            (typeof value === "number" && value === 0 && field.type !== "number")
+            (typeof value === "string" && value.trim() === "")
           ) {
             emptyFields.push(field.label);
           }
@@ -603,25 +506,20 @@ function AdminDashboard() {
       }
       
       const payload = normalizePayload(resource, forms[resource], isEditing);
-
-      // If creating/updating events and a file was selected, send multipart FormData
       let bodyToSend = payload;
 
-      if (resource === "events") {
-        if (eventImageFiles.length > 0) {
-          const fd = new FormData();
-          Object.entries(payload).forEach(([k, v]) => {
-            if (v !== undefined && v !== null) fd.append(k, v);
-          });
-          eventImageFiles.forEach((file) => {
-            fd.append("imazhi", file);
-          });
-          bodyToSend = fd;
-        }
+      if (resource === "events" && eventImageFiles.length > 0) {
+        const fd = new FormData();
+        Object.entries(payload).forEach(([k, v]) => {
+          if (v !== undefined && v !== null) fd.append(k, v);
+        });
+        eventImageFiles.forEach((file) => {
+          fd.append("imazhi", file);
+        });
+        bodyToSend = fd;
       }
 
       let savedResponse;
-
       if (isEditing) {
         savedResponse = await apiMap[resource].update(editingId[resource], bodyToSend, token);
       } else {
@@ -638,10 +536,7 @@ function AdminDashboard() {
             ? currentItems.map((item) => (item.id === savedItem.id ? savedItem : item))
             : [...currentItems, savedItem];
 
-          return {
-            ...current,
-            [resource]: nextItems,
-          };
+          return { ...current, [resource]: nextItems };
         });
 
         if (!isEditing) {
@@ -654,9 +549,7 @@ function AdminDashboard() {
 
       resetResourceForm(resource);
       await loadDashboard();
-      setSuccess(
-        `${RESOURCE_CONFIG[resource].label} ${isEditing ? "updated" : "created"} successfully.`
-      );
+      setSuccess(`${RESOURCE_CONFIG[resource].label} ${isEditing ? "updated" : "created"} successfully.`);
     } catch (submitError) {
       const backendInfo = submitError?.data ? ` (${JSON.stringify(submitError.data)})` : "";
       setError((submitError.message || "Failed to save changes.") + backendInfo);
@@ -671,37 +564,38 @@ function AdminDashboard() {
   const isEditingActive = Boolean(editingId[activeResource]);
 
   const displayedItems = useMemo(() => {
-    const items = activeItems || [];
-    const query = (searchQueries[activeResource] || "").trim().toLowerCase();
+  const items = activeItems || [];
+  const query = (searchQueries[activeResource] || "").trim().toLowerCase();
+  const activeFilters = filters[activeResource] || {};
 
-    const filtered = items.filter((item) => {
-      if (!query) return true;
-      return (activeColumns || []).some((col) =>
+  const filtered = items.filter((item) => {
+    // Search
+    if (query) {
+      const matchesSearch = (activeColumns || []).some((col) =>
         String(item[col] ?? "").toLowerCase().includes(query)
       );
-    });
+      if (!matchesSearch) return false;
+    }
 
-    const sort = sortState[activeResource] || {};
-    if (!sort || !sort.column) return filtered;
+    // Filters
+    for (const [key, value] of Object.entries(activeFilters)) {
+      if (value === "" || value === null || value === undefined) continue;
+      if (String(item[key]) !== String(value)) return false;
+    }
 
-    const sorted = [...filtered].sort((a, b) => {
-      const aRaw = a[sort.column];
-      const bRaw = b[sort.column];
+    return true;
+  });
 
-      const aStr = aRaw === null || aRaw === undefined ? "" : String(aRaw).trim();
-      const bStr = bRaw === null || bRaw === undefined ? "" : String(bRaw).trim();
+  const sort = sortState[activeResource] || {};
+  if (!sort || !sort.column) return filtered;
 
-      const aFirst = aStr.charAt(0).toLowerCase();
-      const bFirst = bStr.charAt(0).toLowerCase();
-
-      let cmp = aFirst.localeCompare(bFirst);
-      if (cmp === 0) cmp = aStr.localeCompare(bStr);
-
-      return sort.dir === "desc" ? -cmp : cmp;
-    });
-
-    return sorted;
-  }, [activeItems, activeColumns, searchQueries, activeResource, sortState]);
+  return [...filtered].sort((a, b) => {
+    const aStr = String(a[sort.column] ?? "").trim();
+    const bStr = String(b[sort.column] ?? "").trim();
+    const cmp = aStr.localeCompare(bStr);
+    return sort.dir === "desc" ? -cmp : cmp;
+  });
+}, [activeItems, activeColumns, searchQueries, activeResource, sortState, filters]);
 
   const handleHeaderSort = (column) => {
     setSortState((cur) => {
@@ -712,7 +606,6 @@ function AdminDashboard() {
           [activeResource]: { column, dir: curState.dir === "asc" ? "desc" : "asc" },
         };
       }
-
       return { ...cur, [activeResource]: { column, dir: "asc" } };
     });
   };
@@ -726,9 +619,7 @@ function AdminDashboard() {
           <div>
             <span className="dashboard-eyebrow">Control Center</span>
             <h1>Admin dashboard</h1>
-            <p>
-              A single place to manage the controllers you already exposed in the backend.
-            </p>
+            <p>A single place to manage platform resources safely.</p>
           </div>
           <div className="dashboard-session">
             <span className="session-label">Signed in as</span>
@@ -760,10 +651,6 @@ function AdminDashboard() {
             <span>Categories</span>
             <strong>{loading ? "..." : stats.categories}</strong>
           </div>
-          <div className="stat-card">
-            <span>Organizers</span>
-            <strong>{loading ? "..." : stats.organizers}</strong>
-          </div>
         </section>
 
         {error ? <div className="dashboard-message error">{error}</div> : null}
@@ -783,7 +670,7 @@ function AdminDashboard() {
                 }}
               >
                 <span>{config.label}</span>
-                <small>{data[key].length}</small>
+                <small>{data[key]?.length || 0}</small>
               </button>
             ))}
           </aside>
@@ -796,11 +683,7 @@ function AdminDashboard() {
                   <p>{RESOURCE_CONFIG[activeResource].description}</p>
                 </div>
                 {isEditingActive ? (
-                  <button
-                    type="button"
-                    className="ghost-btn"
-                    onClick={() => resetResourceForm(activeResource)}
-                  >
+                  <button type="button" className="ghost-btn" onClick={() => resetResourceForm(activeResource)}>
                     Cancel edit
                   </button>
                 ) : null}
@@ -811,22 +694,16 @@ function AdminDashboard() {
                   {activeFields.map((field) => {
                     const options = selectOptions[field.name] || [];
                     const value = forms[activeResource][field.name] ?? "";
-                    const isPasswordEditField =
-                      activeResource === "users" && field.name === "password" && isEditingActive;
+                    const isPasswordEditField = activeResource === "users" && field.name === "password" && isEditingActive;
 
                     return (
-                      <label
-                        key={field.name}
-                        className={`form-field${field.type === "textarea" ? " full-width" : ""}`}
-                      >
+                      <label key={field.name} className={`form-field${field.type === "textarea" ? " full-width" : ""}`}>
                         <span>{field.label}</span>
                         {field.type === "textarea" ? (
                           <>
                             <textarea
                               value={value}
-                              onChange={(event) =>
-                                handleFormChange(activeResource, field.name, event.target.value)
-                              }
+                              onChange={(event) => handleFormChange(activeResource, field.name, event.target.value)}
                               placeholder={field.placeholder || ""}
                               required={field.required}
                               rows="5"
@@ -836,51 +713,28 @@ function AdminDashboard() {
                                 type="file"
                                 accept="image/*"
                                 multiple
-                                onChange={(event) =>
-                                  handleFormChange(activeResource, "event_files", event.target.files)
-                                }
+                                onChange={(event) => handleFormChange(activeResource, "event_files", event.target.files)}
                               />
                             ) : null}
                           </>
                         ) : field.type === "select" ? (
-                          field.name === "imazhi" ? (
-                            <div className="upload-field">
-                              <span className="upload-field-label">Upload image</span>
-                              <input
-                                type="file"
-                                accept="image/*"
-                                multiple
-                                onChange={(e) => {
-                                  handleFormChange(activeResource, "event_files", e.target.files);
-                                }}
-                              />
-                              {forms[activeResource].imazhi ? (
-                                <div className="upload-preview">{forms[activeResource].imazhi}</div>
-                              ) : null}
-                            </div>
-                          ) : (
-                            <select
-                              value={value}
-                              onChange={(event) =>
-                                handleFormChange(activeResource, field.name, event.target.value)
-                              }
-                              required={field.required}
-                            >
-                              <option value="">Select {field.label.toLowerCase()}</option>
-                              {options.map((option) => (
-                                <option key={option.value} value={option.value}>
-                                  {option.label}
-                                </option>
-                              ))}
-                            </select>
-                          )
+                          <select
+                            value={value}
+                            onChange={(event) => handleFormChange(activeResource, field.name, event.target.value)}
+                            required={field.required}
+                          >
+                            <option value="">Select {field.label.toLowerCase()}</option>
+                            {options.map((option) => (
+                              <option key={option.value} value={option.value}>
+                                {option.label}
+                              </option>
+                            ))}
+                          </select>
                         ) : (
                           <input
                             type={field.type}
                             value={value}
-                            onChange={(event) =>
-                                handleFormChange(activeResource, field.name, event.target.value)
-                            }
+                            onChange={(event) => handleFormChange(activeResource, field.name, event.target.value)}
                             placeholder={field.placeholder || ""}
                             required={isPasswordEditField ? false : field.required}
                             step={field.step}
@@ -892,14 +746,12 @@ function AdminDashboard() {
                                   ? LETTERS_ONLY_REGEX.source
                                   : activeResource === "users" && field.name === "emri"
                                     ? LETTERS_ONLY_REGEX.source
-                                    : activeResource === "organizers" && field.name === "telefoni"
-                                      ? PHONE_REGEX.source
-                                      : undefined
+                                    : undefined
                             }
                           />
                         )}
                         {isPasswordEditField ? (
-                          <small>Leave blank to keep the current password.</small>
+                          <small>Leave blank to keep current password.</small>
                         ) : activeResource === "events" && field.name === "imazhi" ? (
                           <small>One image URL per line. Maximum 10 photos.</small>
                         ) : activeResource === "speakers" && field.name === "event_ids" ? (
@@ -914,11 +766,7 @@ function AdminDashboard() {
                   <button type="submit" className="primary-btn" disabled={saving}>
                     {saving ? "Saving..." : isEditingActive ? "Update" : "Create"}
                   </button>
-                  <button
-                    type="button"
-                    className="ghost-btn"
-                    onClick={() => resetResourceForm(activeResource)}
-                  >
+                  <button type="button" className="ghost-btn" onClick={() => resetResourceForm(activeResource)}>
                     Reset
                   </button>
                 </div>
@@ -931,21 +779,86 @@ function AdminDashboard() {
                   <h2>{RESOURCE_CONFIG[activeResource].label}</h2>
                   <p>{RESOURCE_CONFIG[activeResource].description}</p>
                 </div>
-                <div style={{display: "flex", gap: 12, alignItems: "center"}}>
+                <div style={{ display: "flex", gap: 12, alignItems: "center" }}>
                   <input
                     aria-label={`Search ${RESOURCE_CONFIG[activeResource].label}`}
                     className="resource-search"
                     placeholder={`Search ${RESOURCE_CONFIG[activeResource].label}...`}
                     value={searchQueries[activeResource] || ""}
-                    onChange={(e) =>
-                      setSearchQueries((cur) => ({ ...cur, [activeResource]: e.target.value }))
-                    }
+                    onChange={(e) => setSearchQueries((cur) => ({ ...cur, [activeResource]: e.target.value }))}
                   />
                   <button type="button" className="ghost-btn" onClick={loadDashboard}>
                     Refresh
                   </button>
                 </div>
               </div>
+
+
+                            {/* Filter Bar */}
+              {activeResource === "events" && (
+                <div className="filter-bar">
+                  <select
+                    value={filters.events.category_id}
+                    onChange={(e) => setFilters((f) => ({ ...f, events: { ...f.events, category_id: e.target.value } }))}
+                  >
+                    <option value="">All categories</option>
+                    {data.categories.map((cat) => (
+                      <option key={cat.id} value={cat.id}>{cat.emri}</option>
+                    ))}
+                  </select>
+                </div>
+              )}
+
+              {activeResource === "speakers" && (
+                <div className="filter-bar">
+                  <select
+                    value={filters.speakers.event_id}
+                    onChange={(e) => setFilters((f) => ({ ...f, speakers: { ...f.speakers, event_id: e.target.value } }))}
+                  >
+                    <option value="">All events</option>
+                    {data.events.map((ev) => (
+                      <option key={ev.id} value={ev.id}>{ev.titulli}</option>
+                    ))}
+                  </select>
+                </div>
+              )}
+
+              {activeResource === "tickets" && (
+                <div className="filter-bar">
+                  <select
+                    value={filters.tickets.event_id}
+                    onChange={(e) => setFilters((f) => ({ ...f, tickets: { ...f.tickets, event_id: e.target.value } }))}
+                  >
+                    <option value="">All events</option>
+                    {data.events.map((ev) => (
+                      <option key={ev.id} value={ev.id}>{ev.titulli}</option>
+                    ))}
+                  </select>
+                  <select
+                    value={filters.tickets.tipi}
+                    onChange={(e) => setFilters((f) => ({ ...f, tickets: { ...f.tickets, tipi: e.target.value } }))}
+                  >
+                    <option value="">All types</option>
+                    {[...new Set(data.tickets.map((t) => t.tipi).filter(Boolean))].map((tipi) => (
+                      <option key={tipi} value={tipi}>{tipi}</option>
+                    ))}
+                  </select>
+                </div>
+              )}
+
+              {activeResource === "users" && (
+                <div className="filter-bar">
+                  <select
+                    value={filters.users.roli}
+                    onChange={(e) => setFilters((f) => ({ ...f, users: { ...f.users, roli: e.target.value } }))}
+                  >
+                    <option value="">All roles</option>
+                    <option value="user">User</option>
+                    <option value="admin">Admin</option>
+                    <option value="organizer">Organizer</option>
+                  </select>
+                </div>
+              )}
 
               {loading ? (
                 <div className="empty-state">Loading data...</div>
@@ -957,11 +870,7 @@ function AdminDashboard() {
                     <thead>
                       <tr>
                         {activeColumns.map((column) => (
-                          <th
-                            key={column}
-                            className="clickable-header"
-                            onClick={() => handleHeaderSort(column)}
-                          >
+                          <th key={column} className="clickable-header" onClick={() => handleHeaderSort(column)}>
                             {prettifyKey(column)}
                             {sortState[activeResource]?.column === column ? (
                               sortState[activeResource].dir === "asc" ? " \u25B2" : " \u25BC"
@@ -985,18 +894,10 @@ function AdminDashboard() {
                           ))}
                           <td>
                             <div className="table-actions">
-                              <button
-                                type="button"
-                                className="table-btn"
-                                onClick={() => handleEdit(activeResource, item)}
-                              >
+                              <button type="button" className="table-btn" onClick={() => handleEdit(activeResource, item)}>
                                 Edit
                               </button>
-                              <button
-                                type="button"
-                                className="table-btn danger"
-                                onClick={() => handleDelete(activeResource, item.id)}
-                              >
+                              <button type="button" className="table-btn danger" onClick={() => handleDelete(activeResource, item.id)}>
                                 Delete
                               </button>
                             </div>

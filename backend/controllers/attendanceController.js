@@ -1,88 +1,102 @@
 const db = require("../../database/db");
 
-const getAttendance = (req, res) => {
-  db.query('SELECT * FROM "Attendance" ORDER BY id ASC', (err, result) => {
-    if (err) {
-      return res.status(500).json({ error: err.message });
-    }
-
-    res.json(result.rows);
-  });
+const getAttendance = async (req, res) => {
+  try {
+    const records = await db.attendance.findMany({
+      orderBy: { id: "asc" },
+    });
+    return res.json(records);
+  } catch (err) {
+    return res.status(500).json({ error: err.message });
+  }
 };
 
-const getAttendanceById = (req, res) => {
-  const { id } = req.params;
+const getAttendanceById = async (req, res) => {
+  try {
+    const { id } = req.params;
 
-  db.query('SELECT * FROM "Attendance" WHERE id = $1', [id], (err, result) => {
-    if (err) {
-      return res.status(500).json({ error: err.message });
-    }
+    const record = await db.attendance.findUnique({
+      where: { id: id },
+    });
 
-    if (result.rows.length === 0) {
+    if (!record) {
       return res.status(404).json({ message: "Attendance nuk u gjet" });
     }
 
-    res.json(result.rows[0]);
-  });
+    return res.json(record);
+  } catch (err) {
+    return res.status(500).json({ error: err.message });
+  }
 };
 
-const createAttendance = (req, res) => {
-  const { registration_id, event_id, user_id, check_in_time, check_out_time, statusi_checkin } = req.body;
+const createAttendance = async (req, res) => {
+  try {
+    const { registration_id, event_id, user_id, check_in_time, check_out_time, statusi_checkin } = req.body;
 
-  db.query(
-    'INSERT INTO "Attendance" (registration_id, event_id, user_id, check_in_time, check_out_time, statusi_checkin) VALUES ($1, $2, $3, $4, $5, $6) RETURNING *',
-    [registration_id || null, event_id || null, user_id || null, check_in_time || null, check_out_time || null, statusi_checkin || null],
-    (err, result) => {
-      if (err) {
-        return res.status(500).json({ error: err.message });
-      }
+    const newRecord = await db.attendance.create({
+      data: {
+        registration_id: registration_id || null,
+        event_id: event_id || null,
+        user_id: user_id || null,
+        check_in_time: check_in_time ? new Date(check_in_time) : null,
+        check_out_time: check_out_time ? new Date(check_out_time) : null,
+        statusi_checkin: statusi_checkin || null,
+      },
+    });
 
-      res.status(201).json({
-        message: "Attendance u shtua me sukses",
-        attendance: result.rows[0]
-      });
-    }
-  );
+    return res.status(201).json({
+      message: "Attendance u shtua me sukses",
+      attendance: newRecord,
+    });
+  } catch (err) {
+    return res.status(500).json({ error: err.message });
+  }
 };
 
-const updateAttendance = (req, res) => {
-  const { id } = req.params;
-  const { registration_id, event_id, user_id, check_in_time, check_out_time, statusi_checkin } = req.body;
+const updateAttendance = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { registration_id, event_id, user_id, check_in_time, check_out_time, statusi_checkin } = req.body;
 
-  db.query(
-    'UPDATE "Attendance" SET registration_id = $1, event_id = $2, user_id = $3, check_in_time = $4, check_out_time = $5, statusi_checkin = $6 WHERE id = $7 RETURNING *',
-    [registration_id || null, event_id || null, user_id || null, check_in_time || null, check_out_time || null, statusi_checkin || null, id],
-    (err, result) => {
-      if (err) {
-        return res.status(500).json({ error: err.message });
-      }
+    const updatedRecord = await db.attendance.update({
+      where: { id: id },
+      data: {
+        registration_id: registration_id,
+        event_id: event_id,
+        user_id: user_id,
+        check_in_time: check_in_time ? new Date(check_in_time) : null,
+        check_out_time: check_out_time ? new Date(check_out_time) : null,
+        statusi_checkin: statusi_checkin,
+      },
+    });
 
-      if (result.rows.length === 0) {
-        return res.status(404).json({ message: "Attendance nuk u gjet" });
-      }
-
-      res.json({
-        message: "Attendance u perditesua me sukses",
-        attendance: result.rows[0]
-      });
-    }
-  );
-};
-
-const deleteAttendance = (req, res) => {
-  const { id } = req.params;
-
-  db.query('DELETE FROM "Attendance" WHERE id = $1', [id], (err, result) => {
-    if (err) {
-      return res.status(500).json({ error: err.message });
-    }
-
-    if (result.rowCount === 0) {
+    return res.json({
+      message: "Attendance u perditesua me sukses",
+      attendance: updatedRecord,
+    });
+  } catch (err) {
+    if (err.code === "P2025") {
       return res.status(404).json({ message: "Attendance nuk u gjet" });
     }
+    return res.status(500).json({ error: err.message });
+  }
+};
 
-    res.json({ message: "Attendance u fshi me sukses" });
-  });
+const deleteAttendance = async (req, res) => {
+  try {
+    const { id } = req.params;
+
+    await db.attendance.delete({
+      where: { id: id },
+    });
+
+    return res.json({ message: "Attendance u fshi me sukses" });
+  } catch (err) {
+    if (err.code === "P2025") {
+      return res.status(404).json({ message: "Attendance nuk u gjet" });
+    }
+    return res.status(500).json({ error: err.message });
+  }
 };
 
 module.exports = {
@@ -90,5 +104,5 @@ module.exports = {
   getAttendanceById,
   createAttendance,
   updateAttendance,
-  deleteAttendance
+  deleteAttendance,
 };

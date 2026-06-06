@@ -15,10 +15,7 @@ const {
 } = require("../services/sessionService");
 
 const sanitizeUser = (user) => {
-  if (!user) {
-    return null;
-  }
-
+  if (!user) return null;
   const { password, ...safeUser } = user;
   return safeUser;
 };
@@ -28,13 +25,8 @@ const login = async (req, res) => {
   const token = createAccessToken(user);
   const refreshToken = createRefreshToken(user);
 
-  if (!token) {
-    return res.status(500).json({ message: "JWT secret is not configured" });
-  }
-
-  if (!refreshToken) {
-    return res.status(500).json({ message: "Refresh token secret is not configured" });
-  }
+  if (!token) return res.status(500).json({ message: "JWT secret is not configured" });
+  if (!refreshToken) return res.status(500).json({ message: "Refresh token secret is not configured" });
 
   try {
     await storeRefreshSession(user, refreshToken);
@@ -48,63 +40,68 @@ const login = async (req, res) => {
     token,
     tokenType: "Bearer",
     expiresIn: ACCESS_TOKEN_EXPIRES_IN,
-    user: sanitizeUser(user)
+    user: sanitizeUser(user),
   });
 };
 
-const getCurrentSession = (req, res) => {
-  db.query('SELECT * FROM "Users" WHERE id = $1 LIMIT 1', [req.user.id], (err, result) => {
-    if (err) {
-      return res.status(500).json({ error: err.message });
+const getCurrentSession = async (req, res) => {
+  try {
+    if (!req.user || !req.user.id) {
+      return res.status(401).json({ message: "Not authenticated" });
     }
 
-    if (result.rows.length === 0) {
-      return res.status(404).json({ message: "User not found" });
-    }
-
-    return res.json({
-      authenticated: true,
-      user: sanitizeUser(result.rows[0])
+    const user = await db.users.findUnique({ 
+      where: { id: parseInt(req.user.id, 10) } 
     });
-  });
+
+    if (!user) return res.status(404).json({ message: "User not found" });
+
+    return res.json({ authenticated: true, user: sanitizeUser(user) });
+  } catch (err) {
+    return res.status(500).json({ error: err.message });
+  }
 };
 
 const refreshSession = async (req, res) => {
   const refreshToken = getRefreshTokenCookie(req);
 
-  if (!refreshToken) {
-    return res.status(401).json({ message: "No refresh token provided" });
-  }
+  if (!refreshToken) return res.status(401).json({ message: "No refresh token provided" });
 
   try {
     const decoded = verifyRefreshToken(refreshToken);
-    const session = await db.query(
-      'SELECT * FROM "RefreshTokens" WHERE token_hash = $1 AND revoked_at IS NULL AND expires_at > NOW() LIMIT 1',
-      [hashToken(refreshToken)]
-    );
+    const userId = decoded?.id || decoded?.userId || decoded?.sub;
 
-    if (session.rows.length === 0) {
+    if (!userId || typeof userId !== "string") {
+      console.warn("[Refresh Bypass]: Invalid or non-string JWT payload ID:", userId);
+      clearRefreshTokenCookie(res);
+      return res.status(401).json({ message: "Session payload invalid. Please log in again." });
+    }
+
+    const session = await db.refreshTokens.findFirst({
+      where: {
+        token_hash: hashToken(refreshToken),
+        revoked_at: null,
+        expires_at: { gt: new Date() },
+      },
+    });
+
+    if (!session) {
       clearRefreshTokenCookie(res);
       return res.status(401).json({ message: "Refresh session expired or revoked" });
     }
 
-    const currentUserResult = await db.query(
-      'SELECT * FROM "Users" WHERE id = $1 LIMIT 1',
-      [decoded.id]
-    );
+    const user = await db.users.findUnique({ 
+      where: { id: userId } 
+    });
 
-    if (currentUserResult.rows.length === 0) {
+    if (!user) {
       await revokeRefreshSession(refreshToken);
       clearRefreshTokenCookie(res);
       return res.status(401).json({ message: "User not found" });
     }
 
-    const user = currentUserResult.rows[0];
     const nextAccessToken = createAccessToken(user);
-
-    if (!nextAccessToken) {
-      return res.status(500).json({ message: "JWT secret is not configured" });
-    }
+    if (!nextAccessToken) return res.status(500).json({ message: "JWT secret is not configured" });
 
     const nextRefreshToken = await rotateRefreshSession(user, refreshToken);
     setRefreshTokenCookie(res, nextRefreshToken);
@@ -114,7 +111,7 @@ const refreshSession = async (req, res) => {
       token: nextAccessToken,
       tokenType: "Bearer",
       expiresIn: ACCESS_TOKEN_EXPIRES_IN,
-      user: sanitizeUser(user)
+      user: sanitizeUser(user),
     });
   } catch (error) {
     const isAuthError =
@@ -126,16 +123,12 @@ const refreshSession = async (req, res) => {
       clearRefreshTokenCookie(res);
       return res.status(401).json({
         message:
-          error.name === "TokenExpiredError"
-            ? "Refresh token expired"
-            : "Invalid refresh token"
+          error.name === "TokenExpiredError" ? "Refresh token expired" : "Invalid refresh token",
       });
     }
 
-    console.error("Refresh session failed:", error.message);
-    return res.status(500).json({
-      message: "Failed to refresh session"
-    });
+    console.error("Refresh session failed:", error);
+    return res.status(500).json({ message: "Failed to refresh session", details: error.message });
   }
 };
 
@@ -151,16 +144,7 @@ const logout = async (req, res) => {
   }
 
   clearRefreshTokenCookie(res);
-
-  return res.json({
-    message: "Logout successful."
-  });
+  return res.json({ message: "Logout successful." });
 };
 
-module.exports = {
-  login,
-  getCurrentSession,
-  refreshSession,
-  logout,
-  sanitizeUser
-};
+module.exports = { login, getCurrentSession, refreshSession, logout, sanitizeUser };

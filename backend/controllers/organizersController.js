@@ -15,16 +15,19 @@ const organizerFields = [
   "website",
 ];
 
-const normalizeOrganizer = (body) =>
-  organizerFields.map((field) => {
+const normalizeOrganizer = (body) => {
+  const normalized = {};
+  organizerFields.forEach((field) => {
     const value = body[field];
     if (value === null || value === undefined) {
-      return null;
+      normalized[field] = null;
+    } else {
+      const trimmed = trimString(value);
+      normalized[field] = trimmed || null;
     }
-
-    const trimmed = trimString(value);
-    return trimmed || null;
   });
+  return normalized;
+};
 
 const validateOrganizer = (body) => {
   if (body.emri_organizates && !isNonEmptyString(body.emri_organizates)) {
@@ -46,103 +49,106 @@ const validateOrganizer = (body) => {
   return null;
 };
 
-const getOrganizers = (req, res) => {
-  db.query('SELECT * FROM "Organizers" ORDER BY id ASC', (err, result) => {
-    if (err) {
-      return res.status(500).json({ error: err.message });
-    }
-
-    res.json(result.rows);
-  });
-};
-
-const getOrganizerById = (req, res) => {
-  const { id } = req.params;
-
-  db.query('SELECT * FROM "Organizers" WHERE id = $1', [id], (err, result) => {
-    if (err) {
-      return res.status(500).json({ error: err.message });
-    }
-
-    if (result.rows.length === 0) {
-      return res.status(404).json({ message: "Organizatori nuk u gjet" });
-    }
-
-    return res.json(result.rows[0]);
-  });
-};
-
-const createOrganizer = (req, res) => {
-  const validationError = validateOrganizer(req.body);
-  if (validationError) {
-    return res.status(400).json({ message: validationError });
-  }
-
-  db.query(
-    'INSERT INTO "Organizers" (emri_organizates, pershkrimi, email, telefoni, website) VALUES ($1, $2, $3, $4, $5) RETURNING *',
-    normalizeOrganizer(req.body),
-    (err, result) => {
-      if (err) {
-        return res.status(500).json({ error: err.message });
-      }
-
-      return res.status(201).json({
-        message: "Organizatori u shtua me sukses",
-        organizer: result.rows[0],
-      });
-    }
-  );
-};
-
-const updateOrganizer = (req, res) => {
-  const { id } = req.params;
-  const validationError = validateOrganizer(req.body);
-  if (validationError) {
-    return res.status(400).json({ message: validationError });
-  }
-
-  db.query(
-    'UPDATE "Organizers" SET emri_organizates = $1, pershkrimi = $2, email = $3, telefoni = $4, website = $5 WHERE id = $6 RETURNING *',
-    [...normalizeOrganizer(req.body), id],
-    (err, result) => {
-      if (err) {
-        return res.status(500).json({ error: err.message });
-      }
-
-      if (result.rows.length === 0) {
-        return res.status(404).json({ message: "Organizatori nuk u gjet" });
-      }
-
-      return res.status(200).json({
-        message: "Organizatori u perditesua me sukses",
-        organizer: result.rows[0],
-      });
-    }
-  );
-};
-
-const deleteOrganizer = (req, res) => {
-  const { id } = req.params;
-  const isOrganizer = req.user?.roli === "organizer";
-
-  // Only admins can delete organizers
-  if (isOrganizer) {
-    return res.status(403).json({
-      message: "Access denied. Only admins can delete organizers."
+const getOrganizers = async (req, res) => {
+  try {
+    const records = await db.organizers.findMany({
+      orderBy: { id: "asc" },
     });
+    return res.json(records);
+  } catch (err) {
+    return res.status(500).json({ error: err.message });
   }
+};
 
-  db.query('DELETE FROM "Organizers" WHERE id = $1', [id], (err, result) => {
-    if (err) {
-      return res.status(500).json({ error: err.message });
-    }
+const getOrganizerById = async (req, res) => {
+  try {
+    const { id } = req.params;
 
-    if (result.rowCount === 0) {
+    const record = await db.organizers.findUnique({
+      where: { id: id },
+    });
+
+    if (!record) {
       return res.status(404).json({ message: "Organizatori nuk u gjet" });
     }
+
+    return res.json(record);
+  } catch (err) {
+    return res.status(500).json({ error: err.message });
+  }
+};
+
+const createOrganizer = async (req, res) => {
+  try {
+    const validationError = validateOrganizer(req.body);
+    if (validationError) {
+      return res.status(400).json({ message: validationError });
+    }
+
+    const normalizedData = normalizeOrganizer(req.body);
+
+    const newRecord = await db.organizers.create({
+      data: normalizedData,
+    });
+
+    return res.status(201).json({
+      message: "Organizatori u shtua me sukses",
+      organizer: newRecord,
+    });
+  } catch (err) {
+    return res.status(500).json({ error: err.message });
+  }
+};
+
+const updateOrganizer = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const validationError = validateOrganizer(req.body);
+    if (validationError) {
+      return res.status(400).json({ message: validationError });
+    }
+
+    const normalizedData = normalizeOrganizer(req.body);
+
+    const updatedRecord = await db.organizers.update({
+      where: { id: id },
+      data: normalizedData,
+    });
+
+    return res.status(200).json({
+      message: "Organizatori u perditesua me sukses",
+      organizer: updatedRecord,
+    });
+  } catch (err) {
+    if (err.code === "P2025") {
+      return res.status(404).json({ message: "Organizatori nuk u gjet" });
+    }
+    return res.status(500).json({ error: err.message });
+  }
+};
+
+const deleteOrganizer = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const isOrganizer = req.user?.roli === "organizer";
+
+    if (isOrganizer) {
+      return res.status(403).json({
+        message: "Access denied. Only admins can delete organizers.",
+      });
+    }
+
+    await db.organizers.delete({
+      where: { id: id },
+    });
 
     return res.json({ message: "Organizatori u fshi me sukses" });
-  });
+  } catch (err) {
+    if (err.code === "P2025") {
+      return res.status(404).json({ message: "Organizatori nuk u gjet" });
+    }
+    return res.status(500).json({ error: err.message });
+  }
 };
 
 module.exports = {

@@ -1,96 +1,117 @@
 const db = require("../../database/db");
 
-const getVenues = (req, res) => {
-  db.query('SELECT * FROM "Venues" ORDER BY id ASC', (err, result) => {
-    if (err) {
-      return res.status(500).json({ error: err.message });
-    }
+const serializeVenue = (venue) => {
+  if (!venue) return null;
+  if (Array.isArray(venue)) return venue.map(serializeVenue);
 
-    res.json(result.rows);
-  });
+  return {
+    ...venue,
+    kapaciteti: venue.kapaciteti !== null && venue.kapaciteti !== undefined ? Number(venue.kapaciteti) : null,
+  };
 };
 
-const getVenueById = (req, res) => {
-  const { id } = req.params;
-
-  db.query('SELECT * FROM "Venues" WHERE id = $1', [id], (err, result) => {
-    if (err) {
-      return res.status(500).json({ error: err.message });
-    }
-
-    if (result.rows.length === 0) {
-      return res.status(404).json({ message: "Vendi nuk u gjet" });
-    }
-
-    res.json(result.rows[0]);
-  });
-};
-
-const createVenue = (req, res) => {
-  const { emri, adresa, qyteti, kapaciteti, pershkrimi } = req.body;
-
-  db.query(
-    'INSERT INTO "Venues" (emri, adresa, qyteti, kapaciteti, pershkrimi) VALUES ($1, $2, $3, $4, $5) RETURNING *',
-    [emri || null, adresa || null, qyteti || null, kapaciteti || null, pershkrimi || null],
-    (err, result) => {
-      if (err) {
-        return res.status(500).json({ error: err.message });
-      }
-
-      res.status(201).json({
-        message: "Vendi u shtua me sukses",
-        venue: result.rows[0]
-      });
-    }
-  );
-};
-
-const updateVenue = (req, res) => {
-  const { id } = req.params;
-  const { emri, adresa, qyteti, kapaciteti, pershkrimi } = req.body;
-
-  db.query(
-    'UPDATE "Venues" SET emri = $1, adresa = $2, qyteti = $3, kapaciteti = $4, pershkrimi = $5 WHERE id = $6 RETURNING *',
-    [emri || null, adresa || null, qyteti || null, kapaciteti || null, pershkrimi || null, id],
-    (err, result) => {
-      if (err) {
-        return res.status(500).json({ error: err.message });
-      }
-
-      if (result.rows.length === 0) {
-        return res.status(404).json({ message: "Vendi nuk u gjet" });
-      }
-
-      res.json({
-        message: "Vendi u perditesua me sukses",
-        venue: result.rows[0]
-      });
-    }
-  );
-};
-
-const deleteVenue = (req, res) => {
-  const { id } = req.params;
-  const isOrganizer = req.user?.roli === "organizer";
-
-  // Only admins can delete venues
-  if (isOrganizer) {
-    return res.status(403).json({
-      message: "Access denied. Only admins can delete venues."
+const getVenues = async (req, res) => {
+  try {
+    const venues = await db.venues.findMany({
+      orderBy: { id: "asc" },
     });
+    return res.json(serializeVenue(venues));
+  } catch (err) {
+    return res.status(500).json({ error: err.message });
   }
+};
 
-  db.query('DELETE FROM "Venues" WHERE id = $1', [id], (err, result) => {
-    if (err) {
-      return res.status(500).json({ error: err.message });
-    }
+const getVenueById = async (req, res) => {
+  try {
+    const { id } = req.params;
 
-    if (result.rowCount === 0) {
+    const venue = await db.venues.findUnique({
+      where: { id: id },
+    });
+
+    if (!venue) {
       return res.status(404).json({ message: "Vendi nuk u gjet" });
     }
 
-    res.json({ message: "Vendi u fshi me sukses" });
-  });
+    return res.json(serializeVenue(venue));
+  } catch (err) {
+    return res.status(500).json({ error: err.message });
+  }
+};
+
+const createVenue = async (req, res) => {
+  try {
+    const { emri, adresa, qyteti, kapaciteti, pershkrimi } = req.body;
+
+    const newVenue = await db.venues.create({
+      data: {
+        emri: emri || null,
+        adresa: adresa || null,
+        qyteti: qyteti || null,
+        kapaciteti: kapaciteti !== undefined && kapaciteti !== null ? BigInt(kapaciteti) : null,
+        pershkrimi: pershkrimi || null,
+      },
+    });
+
+    return res.status(201).json({
+      message: "Vendi u shtua me sukses",
+      venue: serializeVenue(newVenue),
+    });
+  } catch (err) {
+    return res.status(500).json({ error: err.message });
+  }
+};
+
+const updateVenue = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { emri, adresa, qyteti, kapaciteti, pershkrimi } = req.body;
+
+    const updatedVenue = await db.venues.update({
+      where: { id: id },
+      data: {
+        emri: emri !== undefined ? emri : null,
+        adresa: adresa !== undefined ? adresa : null,
+        qyteti: qyteti !== undefined ? qyteti : null,
+        kapaciteti: kapaciteti !== undefined && kapaciteti !== null ? BigInt(kapaciteti) : (kapaciteti === null ? null : undefined),
+        pershkrimi: pershkrimi !== undefined ? pershkrimi : null,
+      },
+    });
+
+    return res.json({
+      message: "Vendi u perditesua me sukses",
+      venue: serializeVenue(updatedVenue),
+    });
+  } catch (err) {
+    if (err.code === "P2025") {
+      return res.status(404).json({ message: "Vendi nuk u gjet" });
+    }
+    return res.status(500).json({ error: err.message });
+  }
+};
+
+const deleteVenue = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const isOrganizer = req.user?.roli === "organizer";
+
+    if (isOrganizer) {
+      return res.status(403).json({
+        message: "Access denied. Only admins can delete venues.",
+      });
+    }
+
+    await db.venues.delete({
+      where: { id: id },
+    });
+
+    return res.json({ message: "Vendi u fshi me sukses" });
+  } catch (err) {
+    if (err.code === "P2025") {
+      return res.status(404).json({ message: "Vendi nuk u gjet" });
+    }
+    return res.status(500).json({ error: err.message });
+  }
 };
 
 module.exports = {
@@ -98,5 +119,5 @@ module.exports = {
   getVenueById,
   createVenue,
   updateVenue,
-  deleteVenue
+  deleteVenue,
 };

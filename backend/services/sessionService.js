@@ -1,3 +1,4 @@
+// backend/services/sessionService.js
 const crypto = require("crypto");
 const jwt = require("jsonwebtoken");
 const db = require("../../database/db");
@@ -18,31 +19,6 @@ if (process.env.NODE_ENV === "production" && !REFRESH_TOKEN_SECRET) {
 
 const ACCESS_TOKEN_EXPIRES_IN = process.env.JWT_EXPIRES_IN || "15m";
 const REFRESH_TOKEN_EXPIRES_IN = process.env.REFRESH_TOKEN_EXPIRES_IN || "7d";
-
-const refreshTokensTableReady = (async () => {
-  await db.query(`
-    CREATE TABLE IF NOT EXISTS "RefreshTokens" (
-      id SERIAL PRIMARY KEY,
-      user_id UUID NOT NULL REFERENCES "Users"(id) ON DELETE CASCADE,
-      token_jti TEXT NOT NULL UNIQUE,
-      token_hash TEXT NOT NULL UNIQUE,
-      expires_at TIMESTAMPTZ NOT NULL,
-      revoked_at TIMESTAMPTZ,
-      created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
-    )
-  `);
-
-  await db.query(
-    `CREATE INDEX IF NOT EXISTS idx_refresh_tokens_user_id ON "RefreshTokens"(user_id)`
-  );
-
-  await db.query(
-    `CREATE INDEX IF NOT EXISTS idx_refresh_tokens_expires_at ON "RefreshTokens"(expires_at)`
-  );
-})().catch((error) => {
-  console.error("Failed to initialize refresh token store:", error.message);
-  throw error;
-});
 
 const durationPattern = /^(\d+)([smhd])$/i;
 
@@ -161,61 +137,64 @@ const clearRefreshTokenCookie = (res) => {
   });
 };
 
+
 const storeRefreshSession = async (user, refreshToken) => {
   const decoded = jwt.verify(refreshToken, REFRESH_TOKEN_SECRET);
   const tokenHash = hashToken(refreshToken);
   const expiresAt = new Date(Date.now() + parseDurationToMs(REFRESH_TOKEN_EXPIRES_IN));
 
-  await refreshTokensTableReady;
-
-  await db.query(
-    `INSERT INTO "RefreshTokens" (user_id, token_jti, token_hash, expires_at)
-     VALUES ($1, $2, $3, $4)`,
-    [user.id, decoded.jti, tokenHash, expiresAt.toISOString()]
-  );
+  await db.refreshTokens.create({
+    data: {
+      user_id: user.id,
+      token_jti: decoded.jti || crypto.randomUUID(),
+      token_hash: tokenHash,
+      expires_at: expiresAt,
+    },
+  });
 
   return { tokenHash, expiresAt };
 };
 
 const findActiveRefreshSession = async (refreshToken) => {
-  await refreshTokensTableReady;
-
   const tokenHash = hashToken(refreshToken);
-  const result = await db.query(
-    `SELECT * FROM "RefreshTokens"
-     WHERE token_hash = $1
-       AND revoked_at IS NULL
-       AND expires_at > NOW()
-     LIMIT 1`,
-    [tokenHash]
-  );
 
-  return result.rows[0] || null;
+
+  return await db.refreshTokens.findFirst({
+    where: {
+      token_hash: tokenHash,
+      revoked_at: null,
+      expires_at: {
+        gt: new Date(),
+    },
+  },
+});
 };
 
 const revokeRefreshSession = async (refreshToken) => {
-  await refreshTokensTableReady;
-
   const tokenHash = hashToken(refreshToken);
-  await db.query(
-    `UPDATE "RefreshTokens"
-     SET revoked_at = NOW()
-     WHERE token_hash = $1
-       AND revoked_at IS NULL`,
-    [tokenHash]
-  );
+
+  await db.refreshTokens.updateMany({
+    where: {
+      token_hash: tokenHash,
+      revoked_at: null,
+      },
+    data: {
+      revoked_at: new Date(),
+    },
+  });
 };
 
 const revokeUserRefreshSessions = async (userId) => {
-  await refreshTokensTableReady;
-
-  await db.query(
-    `UPDATE "RefreshTokens"
-     SET revoked_at = NOW()
-     WHERE user_id = $1
-       AND revoked_at IS NULL`,
-    [userId]
-  );
+  // Replaced raw UPDATE query to cascade revoke all sessions for a user
+  await db.refreshTokens.updateMany({
+    where: {
+      user_id: userId,
+      revoked_at: null,
+    },
+    data: {
+      revoked_at: new Date(),
+    },
+  });
 };
 
 const rotateRefreshSession = async (user, currentRefreshToken) => {
@@ -227,7 +206,12 @@ const rotateRefreshSession = async (user, currentRefreshToken) => {
     throw error;
   }
 
-  await db.query(`DELETE FROM "RefreshTokens" WHERE id = $1`, [currentSession.id]);
+  // Replaced raw DELETE statement
+  await db.refreshTokens.delete({
+    where: {
+      id: currentSession.id,
+    },
+  });
 
   const nextRefreshToken = createRefreshToken(user);
 

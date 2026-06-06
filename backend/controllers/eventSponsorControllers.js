@@ -1,103 +1,110 @@
-const db = require ("../../database/db");
+const db = require("../../database/db");
 
-const getEventSponsor = (req, res) =>{
-    db.query('SELECT * FROM "Event_Sponsors" ORDER BY id ASC', (err, result) =>{
-        if(err){
-            return res.status(500).json({
-                error: err.message
-            });
-        }
-        res.json(result.rows);
+const getEventSponsor = async (req, res) => {
+  try {
+    const sponsors = await db.event_Sponsors.findMany({
+      orderBy: { id: "asc" },
     });
+    return res.json(sponsors);
+  } catch (err) {
+    return res.status(500).json({ error: err.message });
+  }
 };
 
-const getEventSponsorById = (req, res) =>{
-    const {id} = req.params;
-    db.query('SELECT * FROM "Event_Sponsors" WHERE id = $1', [id], (err, result) =>{
-        if(err){
-            return res.status(500).json({
-                error: err.message
-            });
-        }
-        if(result.rows.length === 0){
-            return res.status(404).json({
-                message: "Sponsori i eventit nuk u gjet"
-            });
-        }
-        res.json(result.rows[0]);
-    });
-};
-
-const createEventSponsor = (req, res) =>{
-    const {event_id, sponsor_id, shuma} = req.body;
-    if(!event_id || !sponsor_id || !shuma){
-        return res.status(400).json({
-            message: "Sponsori i eventit nuk eshte krijuar!"
-        });
-    }
-    db.query('INSERT INTO "Event_Sponsors" (event_id, sponsor_id, shuma) VALUES ($1, $2, $3) RETURNING *', [event_id, sponsor_id, shuma], (err, result) =>{
-        if(err){
-            return res.status(500).json({
-                error: err.message
-            });
-        }
-        res.status(201).json({
-            message:"Sponsori i eventit u shtua me sukses!",
-            eventSponsors: result.rows[0]
-        });
-    });
-};
-
-const updateEventSponsor = (req, res) =>{
+const getEventSponsorById = async (req, res) => {
+  try {
     const { id } = req.params;
-    const {event_id, sponsor_id, shuma} = req.body;
-    if(!event_id || !sponsor_id || !shuma){
-        return res.status(400).json({
-            message: "Input jo valid!"
-        });
-    }
-    db.query('UPDATE "Event_Sponsors" SET event_id = $1, sponsor_id = $2, shuma = $3  WHERE id = $4 RETURNING *', [event_id, sponsor_id, shuma, id], (err, result) =>{
-        if(err){
-            return res.status(500).json({
-                error: err.message
-            });
-        }
-        if(result.rowCount === 0){
-            return res.status(404).json({
-                message: "Nuk u shtua Sponsori i eventit i perditesuar!"
-            });
-        }
-        res.status(200).json({
-            message:"Sponsori i eventit u perditesua me sukses",
-            eventSponsor: result.rows[0]
-        });
+
+    const sponsor = await db.event_Sponsors.findUnique({
+      where: { id: id },
     });
+
+    if (!sponsor) {
+      return res.status(404).json({ message: "Sponsori i eventit nuk u gjet" });
+    }
+
+    return res.json(sponsor);
+  } catch (err) {
+    return res.status(500).json({ error: err.message });
+  }
 };
 
-const deleteEventSponsor = (req, res) =>{
-    const {id} = req.params;
-    
-    db.query('DELETE FROM "Event_Sponsors" WHERE id = $1', [id], (err, result) =>{
-        if(err){
-            return res.status(500).json({
-                error: err.message
-            });
-        }
-        if(result.rowCount === 0){
-            return res.status(404).json({
-                message:"Sponsori i eventit nuk u fshi me sukses!"
-            });
-        }
-        res.status(200).json({
-            message: "Sponsori i eventit eshte fshire me sukses"
-        });
+const createEventSponsor = async (req, res) => {
+  try {
+    const { event_id, sponsor_id, shuma } = req.body;
+
+    if (!event_id || !sponsor_id || !shuma) {
+      return res.status(400).json({ message: "Sponsori i eventit nuk eshte krijuar!" });
+    }
+
+    const newSponsor = await db.event_Sponsors.create({
+      data: {
+        event_id: event_id,
+        sponsor_id: sponsor_id,
+        shuma: shuma,
+      },
     });
+
+    return res.status(201).json({
+      message: "Sponsori i eventit u shtua me sukses!",
+      eventSponsors: newSponsor,
+    });
+  } catch (err) {
+    return res.status(500).json({ error: err.message });
+  }
+};
+
+const updateEventSponsor = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { event_id, sponsor_id, shuma } = req.body;
+
+    if (!event_id || !sponsor_id || !shuma) {
+      return res.status(400).json({ message: "Input jo valid!" });
+    }
+
+    const updatedSponsor = await db.event_Sponsors.update({
+      where: { id: id },
+      data: {
+        event_id: event_id,
+        sponsor_id: sponsor_id,
+        shuma: shuma,
+      },
+    });
+
+    return res.status(200).json({
+      message: "Sponsori i eventit u perditesua me sukses",
+      eventSponsor: updatedSponsor,
+    });
+  } catch (err) {
+    if (err.code === "P2025") {
+      return res.status(404).json({ message: "Nuk u shtua Sponsori i eventit i perditesuar!" });
+    }
+    return res.status(500).json({ error: err.message });
+  }
+};
+
+const deleteEventSponsor = async (req, res) => {
+  try {
+    const { id } = req.params;
+
+    await db.event_Sponsors.delete({
+      where: { id: id },
+    });
+
+    return res.status(200).json({ message: "Sponsori i eventit eshte fshire me sukses" });
+  } catch (err) {
+    if (err.code === "P2025") {
+      return res.status(404).json({ message: "Sponsori i eventit nuk u fshi me sukses!" });
+    }
+    return res.status(500).json({ error: err.message });
+  }
 };
 
 module.exports = {
-    getEventSponsor,
-    getEventSponsorById,
-    createEventSponsor,
-    updateEventSponsor,
-    deleteEventSponsor
+  getEventSponsor,
+  getEventSponsorById,
+  createEventSponsor,
+  updateEventSponsor,
+  deleteEventSponsor,
 };

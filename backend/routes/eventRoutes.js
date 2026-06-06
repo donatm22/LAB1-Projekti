@@ -10,7 +10,8 @@ const {
     getEventById,
     createEvent,
     updateEvent,
-    deleteEvent
+    deleteEvent,
+    getManagedEvents
 } = require("../controllers/eventControllers");
 
 const router = express.Router();
@@ -77,6 +78,8 @@ const handleEventUpload = (req, res, next) => {
 
 router.get("/", optionalAuth, getEvents);
 
+router.get("/managed", verifyToken, allowRoles("admin", "organizer"), getManagedEvents);
+
 router.get("/:id", getEventById);
 
 router.post("/POST", verifyToken, allowRoles("admin", "organizer"), handleEventUpload, createEvent);
@@ -84,5 +87,6 @@ router.post("/POST", verifyToken, allowRoles("admin", "organizer"), handleEventU
 router.put("/PUT/:id", verifyToken, checkEventOwnership, handleEventUpload, updateEvent);
 
 router.delete("/DELETE/:id", verifyToken, checkEventOwnership, deleteEvent);
+
 
 module.exports = router;

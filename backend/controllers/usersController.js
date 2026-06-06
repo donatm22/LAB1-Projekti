@@ -8,179 +8,186 @@ const isAdmin = (req) => req.user?.roli === "admin";
 const canAccessUser = (req, userId) => isAdmin(req) || String(req.user?.id) === String(userId);
 const allowedRoles = new Set(["user", "admin", "organizer", "attendee"]);
 
-const getUsers = (req, res) => {
-  db.query(
-    'SELECT id, emri, email, roli, created_at FROM "Users" ORDER BY id ASC',
-    (err, result) => {
-      if (err) {
-        return res.status(500).json({ error: err.message });
-      }
-
-      return res.json(result.rows);
-    }
-  );
+const userSelectionFields = {
+  id: true,
+  emri: true,
+  email: true,
+  roli: true,
+  created_at: true,
 };
 
-const getUserById = (req, res) => {
-  const { id } = req.params;
-
-  if (!canAccessUser(req, id)) {
-    return res.status(403).json({ message: "Access denied" });
+const getUsers = async (req, res) => {
+  try {
+    const users = await db.users.findMany({
+      select: userSelectionFields,
+      orderBy: { id: "asc" },
+    });
+    return res.json(users);
+  } catch (err) {
+    return res.status(500).json({ error: err.message });
   }
-
-  db.query(
-    'SELECT id, emri, email, roli, created_at FROM "Users" WHERE id = $1 LIMIT 1',
-    [id],
-    (err, result) => {
-      if (err) {
-        return res.status(500).json({ error: err.message });
-      }
-
-      if (result.rows.length === 0) {
-        return res.status(404).json({ message: "User nuk u gjet" });
-      }
-
-      return res.json(result.rows[0]);
-    }
-  );
 };
 
-const createUser = (req, res) => {
-  const { emri, email, password, roli } = req.body;
+const getUserById = async (req, res) => {
+  try {
+    const { id } = req.params;
 
-  if (!emri || !email || !password || !roli) {
-    return res.status(400).json({ message: "Ploteso emri, email, password dhe roli" });
-  }
-
-  if (!isLettersOnly(emri)) {
-    return res.status(400).json({ message: "Emri duhet te permbaje vetem shkronja" });
-  }
-
-  if (!isValidEmail(email)) {
-    return res.status(400).json({ message: "Email nuk eshte valid" });
-  }
-
-  if (String(password).length < 6) {
-    return res.status(400).json({ message: "Password duhet te kete te pakten 6 karaktere" });
-  }
-
-  if (!allowedRoles.has(roli)) {
-    return res.status(400).json({ message: "Roli nuk eshte valid" });
-  }
-
-  const hashedPassword = bcrypt.hashSync(password, 10);
-
-  db.query(
-    'INSERT INTO "Users" (emri, email, password, roli) VALUES ($1, $2, $3, $4) RETURNING id, emri, email, roli, created_at',
-    [trimString(emri), trimString(email).toLowerCase(), hashedPassword, roli],
-    (err, result) => {
-      if (err) {
-        if (err.code === "23505") {
-          return res.status(409).json({ message: "Email already exists" });
-        }
-
-        return res.status(500).json({ error: err.message });
-      }
-
-      return res.status(201).json({
-        message: "Registration successful. Your account has been saved.",
-        user: result.rows[0],
-      });
-    }
-  );
-};
-
-const updateUser = (req, res) => {
-  const { id } = req.params;
-  const { emri, email, password, roli } = req.body;
-
-  if (!canAccessUser(req, id)) {
-    return res.status(403).json({ message: "Access denied" });
-  }
-
-  if (!emri || !email) {
-    return res.status(400).json({ message: "Ploteso emri dhe email" });
-  }
-
-  if (!isLettersOnly(emri)) {
-    return res.status(400).json({ message: "Emri duhet te permbaje vetem shkronja" });
-  }
-
-  if (!isValidEmail(email)) {
-    return res.status(400).json({ message: "Email nuk eshte valid" });
-  }
-
-  if (password && String(password).length < 6) {
-    return res.status(400).json({ message: "Password duhet te kete te pakten 6 karaktere" });
-  }
-
-  db.query('SELECT * FROM "Users" WHERE id = $1 LIMIT 1', [id], (findErr, findResult) => {
-    if (findErr) {
-      return res.status(500).json({ error: findErr.message });
+    if (!canAccessUser(req, id)) {
+      return res.status(403).json({ message: "Access denied" });
     }
 
-    if (findResult.rows.length === 0) {
+    const user = await db.users.findUnique({
+      where: { id: id },
+      select: userSelectionFields,
+    });
+
+    if (!user) {
       return res.status(404).json({ message: "User nuk u gjet" });
     }
 
-    const existingUser = findResult.rows[0];
+    return res.json(user);
+  } catch (err) {
+    return res.status(500).json({ error: err.message });
+  }
+};
+
+const createUser = async (req, res) => {
+  try {
+    const { emri, email, password, roli } = req.body;
+
+    if (!emri || !email || !password || !roli) {
+      return res.status(400).json({ message: "Ploteso emri, email, password dhe roli" });
+    }
+
+    if (!isLettersOnly(emri)) {
+      return res.status(400).json({ message: "Emri duhet te permbaje vetem shkronja" });
+    }
+
+    if (!isValidEmail(email)) {
+      return res.status(400).json({ message: "Email nuk eshte valid" });
+    }
+
+    if (String(password).length < 6) {
+      return res.status(400).json({ message: "Password duhet te kete te pakten 6 karaktere" });
+    }
+
+    if (!allowedRoles.has(roli)) {
+      return res.status(400).json({ message: "Roli nuk eshte valid" });
+    }
+
+    const hashedPassword = bcrypt.hashSync(password, 10);
+
+    const newUser = await db.users.create({
+      data: {
+        emri: trimString(emri),
+        email: trimString(email).toLowerCase(),
+        password: hashedPassword,
+        roli: roli,
+      },
+      select: userSelectionFields,
+    });
+
+    return res.status(201).json({
+      message: "Registration successful. Your account has been saved.",
+      user: newUser,
+    });
+  } catch (err) {
+    if (err.code === "P2002") {
+      return res.status(409).json({ message: "Email already exists" });
+    }
+    return res.status(500).json({ error: err.message });
+  }
+};
+
+const updateUser = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { emri, email, password, roli } = req.body;
+
+    if (!canAccessUser(req, id)) {
+      return res.status(403).json({ message: "Access denied" });
+    }
+
+    if (!emri || !email) {
+      return res.status(400).json({ message: "Ploteso emri dhe email" });
+    }
+
+    if (!isLettersOnly(emri)) {
+      return res.status(400).json({ message: "Emri duhet te permbaje vetem shkronja" });
+    }
+
+    if (!isValidEmail(email)) {
+      return res.status(400).json({ message: "Email nuk eshte valid" });
+    }
+
+    if (password && String(password).length < 6) {
+      return res.status(400).json({ message: "Password duhet te kete te pakten 6 karaktere" });
+    }
+
+    const existingUser = await db.users.findUnique({ where: { id: id } });
+    if (!existingUser) {
+      return res.status(404).json({ message: "User nuk u gjet" });
+    }
+
     const nextRole = isAdmin(req) && roli ? roli : existingUser.roli;
     if (!allowedRoles.has(nextRole)) {
       return res.status(400).json({ message: "Roli nuk eshte valid" });
     }
+
     const nextPassword = password ? bcrypt.hashSync(password, 10) : existingUser.password;
 
-    db.query(
-      'UPDATE "Users" SET emri = $1, email = $2, password = $3, roli = $4 WHERE id = $5 RETURNING *',
-      [trimString(emri), trimString(email).toLowerCase(), nextPassword, nextRole, id],
-      async (updateErr, updateResult) => {
-        if (updateErr) {
-          if (updateErr.code === "23505") {
-            return res.status(409).json({ message: "Email already exists" });
-          }
+    const updatedUser = await db.users.update({
+      where: { id: id },
+      data: {
+        emri: trimString(emri),
+        email: trimString(email).toLowerCase(),
+        password: nextPassword,
+        roli: nextRole,
+      },
+    });
 
-          return res.status(500).json({ error: updateErr.message });
-        }
-
-        try {
-          if (password) {
-            await revokeUserRefreshSessions(id);
-          }
-        } catch (sessionError) {
-          console.error("Failed to revoke user refresh sessions:", sessionError.message);
-        }
-
-        return res.json({
-          message: "User u perditesua me sukses",
-          user: sanitizeUser(updateResult.rows[0]),
-        });
+    if (password) {
+      try {
+        await revokeUserRefreshSessions(id);
+      } catch (sessionError) {
+        console.error("Failed to revoke user refresh sessions:", sessionError.message);
       }
-    );
-  });
+    }
+
+    return res.json({
+      message: "User u perditesua me sukses",
+      user: sanitizeUser(updatedUser),
+    });
+  } catch (err) {
+    if (err.code === "P2002") {
+      return res.status(409).json({ message: "Email already exists" });
+    }
+    return res.status(500).json({ error: err.message });
+  }
 };
 
-const deleteUser = (req, res) => {
-  const { id } = req.params;
-  const isOrganizer = req.user?.roli === "organizer";
+const deleteUser = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const isOrganizer = req.user?.roli === "organizer";
 
-  // Only admins can delete users
-  if (isOrganizer) {
-    return res.status(403).json({
-      message: "Access denied. Only admins can delete users."
+    if (isOrganizer) {
+      return res.status(403).json({
+        message: "Access denied. Only admins can delete users.",
+      });
+    }
+
+    await db.users.delete({
+      where: { id: id },
     });
-  }
-
-  db.query('DELETE FROM "Users" WHERE id = $1', [id], (err, result) => {
-    if (err) {
-      return res.status(500).json({ error: err.message });
-    }
-
-    if (result.rowCount === 0) {
-      return res.status(404).json({ message: "User nuk u gjet" });
-    }
 
     return res.json({ message: "User u fshi me sukses" });
-  });
+  } catch (err) {
+    if (err.code === "P2025") {
+      return res.status(404).json({ message: "User nuk u gjet" });
+    }
+    return res.status(500).json({ error: err.message });
+  }
 };
 
 module.exports = {

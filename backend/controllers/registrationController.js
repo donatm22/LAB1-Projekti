@@ -1,8 +1,8 @@
 const db = require("../../database/db");
 const { buildPDF, generateTicketQR } = require("../services/ticketService");
 const {
-    sendBookingConfirmation,
-    sendBookingCancellation,
+  sendBookingConfirmation,
+  sendBookingCancellation,
 } = require("../services/bookingEmailService");
 
 const isAdmin = (req) => req.user?.roli === "admin";
@@ -10,350 +10,357 @@ const isOrganizer = (req) => req.user?.roli === "organizer";
 const isOwner = (req, userId) => String(req.user?.id) === String(userId);
 
 const userCanAccessRegistration = (req, registration) =>
-    isAdmin(req) ||
-    isOwner(req, registration.user_id) ||
-    (isOrganizer(req) && String(req.user.id) === String(registration.organizer_id));
+  isAdmin(req) ||
+  isOwner(req, registration.user_id) ||
+  (isOrganizer(req) && String(req.user?.id) === String(registration.Events?.organizer_id));
 
 const getRegistrationDetails = async (id) => {
-    const result = await db.query(
-        `SELECT
-            r.*,
-            u.emri AS user_name,
-            u.email AS user_email,
-            e.titulli AS event_name,
-            e.data_fillimit AS event_start,
-            e.data_perfundimit AS event_end,
-            e.lokacioni AS event_location,
-            e.organizer_id,
-            t.tipi AS ticket_type,
-            t.cmimi AS ticket_price
-         FROM "Registrations" r
-         LEFT JOIN "Users" u ON u.id = r.user_id
-         LEFT JOIN "Events" e ON e.id = r.event_id
-         LEFT JOIN "Tickets" t ON t.id = r.ticket_id
-         WHERE r.id = $1
-         LIMIT 1`,
-        [id]
-    );
+  const result = await db.registrations.findUnique({
+    where: { id: id },
+    include: {
+      Users: { select: { emri: true, email: true } },
+      Events: {
+        select: {
+          titulli: true,
+          data_fillimit: true,
+          data_perfundimit: true,
+          lokacioni: true,
+          organizer_id: true,
+        },
+      },
+      Tickets: { select: { tipi: true, cmimi: true } },
+    },
+  });
 
-    return result.rows[0] || null;
+  if (!result) return null;
+
+  return {
+    ...result,
+    user_name: result.Users?.emri || null,
+    user_email: result.Users?.email || null,
+    event_name: result.Events?.titulli || null,
+    event_start: result.Events?.data_fillimit || null,
+    event_end: result.Events?.data_perfundimit || null,
+    event_location: result.Events?.lokacioni || null,
+    organizer_id: result.Events?.organizer_id || null,
+    ticket_type: result.Tickets?.tipi || null,
+    ticket_price: result.Tickets?.cmimi || null,
+  };
 };
 
-const getRegistrations = (req, res) => {
-    const params = [];
-    let sql = 'SELECT * FROM "Registrations"';
-
-    if (isOrganizer(req)) {
-        sql += ' WHERE event_id IN (SELECT id FROM "Events" WHERE organizer_id = $1)';
-        params.push(req.user.id);
-    }
-
-    sql += " ORDER BY id ASC";
-
-    db.query(sql, params, (err, results) => {
-        if (err) {
-            return res.status(500).json({ error: err.message });
+const getRegistrations = async (req, res) => {
+  try {
+    const whereClause = isOrganizer(req)
+      ? {
+          Events: {
+            organizer_id: req.user?.id,
+          },
         }
-        return res.json(results.rows);
+      : {};
+
+    const records = await db.registrations.findMany({
+      where: whereClause,
+      orderBy: { id: "asc" },
     });
+
+    return res.json(records);
+  } catch (err) {
+    return res.status(500).json({ error: err.message });
+  }
 };
 
 const getRegistrationById = async (req, res) => {
-    try {
-        const registration = await getRegistrationDetails(req.params.id);
+  try {
+    const registration = await getRegistrationDetails(req.params.id);
 
-        if (!registration) {
-            return res.status(404).json({ message: "Regjistrimi nuk u gjet" });
-        }
-
-        if (!userCanAccessRegistration(req, registration)) {
-            return res.status(403).json({ message: "Access denied" });
-        }
-
-        return res.json(registration);
-    } catch (err) {
-        return res.status(500).json({ error: err.message });
+    if (!registration) {
+      return res.status(404).json({ message: "Regjistrimi nuk u gjet" });
     }
+
+    if (!userCanAccessRegistration(req, registration)) {
+      return res.status(403).json({ message: "Access denied" });
+    }
+
+    return res.json(registration);
+  } catch (err) {
+    return res.status(500).json({ error: err.message });
+  }
 };
 
-const getRegistrationsByEvent = (req, res) => {
+const getRegistrationsByEvent = async (req, res) => {
+  try {
     const { event_id } = req.params;
 
-    db.query('SELECT organizer_id FROM "Events" WHERE id = $1 LIMIT 1', [event_id], (eventErr, eventResult) => {
-        if (eventErr) {
-            return res.status(500).json({ error: eventErr.message });
-        }
-
-        if (eventResult.rows.length === 0) {
-            return res.status(404).json({ message: "Eventi nuk u gjet" });
-        }
-
-        if (isOrganizer(req) && String(eventResult.rows[0].organizer_id) !== String(req.user.id)) {
-            return res.status(403).json({ message: "Access denied" });
-        }
-
-        return db.query(
-            'SELECT * FROM "Registrations" WHERE event_id = $1 ORDER BY data_regjistrimit DESC',
-            [event_id],
-            (err, results) => {
-                if (err) {
-                    return res.status(500).json({ error: err.message });
-                }
-                return res.json(results.rows);
-            }
-        );
+    const targetEvent = await db.events.findUnique({
+      where: { id: event_id },
+      select: { organizer_id: true },
     });
+
+    if (!targetEvent) {
+      return res.status(404).json({ message: "Eventi nuk u gjet" });
+    }
+
+    if (isOrganizer(req) && String(targetEvent.organizer_id) !== String(req.user?.id)) {
+      return res.status(403).json({ message: "Access denied" });
+    }
+
+    const records = await db.registrations.findMany({
+      where: { event_id: event_id },
+      orderBy: { data_regjistrimit: "desc" },
+    });
+
+    return res.json(records);
+  } catch (err) {
+    return res.status(500).json({ error: err.message });
+  }
 };
 
-const getRegistrationsByUser = (req, res) => {
+const getRegistrationsByUser = async (req, res) => {
+  try {
     const { user_id } = req.params;
 
     if (!isAdmin(req) && !isOwner(req, user_id)) {
-        return res.status(403).json({ message: "Access denied" });
+      return res.status(403).json({ message: "Access denied" });
     }
 
-    return db.query(
-        'SELECT * FROM "Registrations" WHERE user_id = $1 ORDER BY data_regjistrimit DESC',
-        [user_id],
-        (err, results) => {
-            if (err) {
-                return res.status(500).json({ error: err.message });
-            }
-            return res.json(results.rows);
-        }
-    );
+    const records = await db.registrations.findMany({
+      where: { user_id: user_id },
+      orderBy: { data_regjistrimit: "desc" },
+    });
+
+    return res.json(records);
+  } catch (err) {
+    return res.status(500).json({ error: err.message });
+  }
 };
 
 const createRegistration = async (req, res) => {
-    const { event_id, ticket_id } = req.body;
-    const user_id = req.user?.id;
-    const userRole = req.user?.roli;
+  const { event_id, ticket_id } = req.body;
+  const user_id = req.user?.id;
+  const userRole = req.user?.roli;
 
-    console.log(`[REG] Create registration - User: ${user_id}, Role: ${userRole}, Event: ${event_id}, Ticket: ${ticket_id}`);
+  console.log(`[REG] Create registration - User: ${user_id}, Role: ${userRole}, Event: ${event_id}, Ticket: ${ticket_id}`);
 
-    if (!event_id || !ticket_id) {
-        return res.status(400).json({ message: "Ploteso event_id dhe ticket_id" });
-    }
+  if (!event_id || !ticket_id) {
+    return res.status(400).json({ message: "Ploteso event_id dhe ticket_id" });
+  }
 
-    if (!user_id) {
-        return res.status(401).json({ message: "Perdoruesi nuk eshte i autentikuar" });
-    }
+  if (!user_id) {
+    return res.status(401).json({ message: "Perdoruesi nuk eshte i autentikuar" });
+  }
 
-    // Organizers cannot book tickets - they can only manage their events
-    if (userRole === "organizer") {
-        console.log(`[REG] Organizer tried to book tickets - DENIED`);
-        return res.status(403).json({
-            message: "Access denied. Organizers cannot book tickets."
+  if (userRole === "organizer") {
+    console.log(`[REG] Organizer tried to book tickets - DENIED`);
+    return res.status(403).json({ message: "Access denied. Organizers cannot book tickets." });
+  }
+
+  try {
+    const registration = await db.$transaction(async (tx) => {
+      const ticket = await tx.tickets.findFirst({
+        where: { id: ticket_id, event_id: event_id },
+      });
+
+      if (!ticket) {
+        throw new Error("404:Bileta nuk u gjet per kete event");
+      }
+
+      if (!ticket.sasia || ticket.sasia <= 0n) {
+        throw new Error("400:Nuk ka bileta te disponueshme");
+      }
+
+      await tx.tickets.update({
+        where: { id: ticket_id },
+        data: { sasia: ticket.sasia - 1n },
+      });
+
+      return await tx.registrations.create({
+        data: {
+          event_id: event_id,
+          user_id: user_id,
+          ticket_id: ticket_id,
+          statusi: "pending",
+          reminder_sent: false,
+        },
+      });
+    });
+
+    res.status(201).json({
+      message: "Regjistrimi u krye me sukses",
+      registration,
+    });
+
+    getRegistrationDetails(registration.id)
+      .then((details) => {
+        if (!details) return null;
+        return sendBookingConfirmation({
+          userName: details.user_name,
+          userEmail: details.user_email,
+          eventName: details.event_name,
+          eventDate: details.event_start ? new Date(details.event_start).toLocaleString() : "",
+          eventLocation: details.event_location,
+          bookingId: registration.id,
         });
+      })
+      .catch((error) => console.error("Error sending confirmation email:", error.message));
+
+  } catch (err) {
+    if (err.message.startsWith("404:")) {
+      return res.status(404).json({ message: err.message.replace("404:", "") });
     }
-
-    const client = await db.connect();
-
-    try {
-        await client.query("BEGIN");
-
-        const ticketResult = await client.query(
-            'SELECT * FROM "Tickets" WHERE id = $1 AND event_id = $2 FOR UPDATE',
-            [ticket_id, event_id]
-        );
-
-        if (ticketResult.rows.length === 0) {
-            await client.query("ROLLBACK");
-            return res.status(404).json({ message: "Bileta nuk u gjet per kete event" });
-        }
-
-        const decrementResult = await client.query(
-            'UPDATE "Tickets" SET sasia = sasia - 1 WHERE id = $1 AND sasia > 0 RETURNING *',
-            [ticket_id]
-        );
-
-        if (decrementResult.rows.length === 0) {
-            await client.query("ROLLBACK");
-            return res.status(400).json({ message: "Nuk ka bileta te disponueshme" });
-        }
-
-        const result = await client.query(
-            `INSERT INTO "Registrations" (event_id, user_id, ticket_id, data_regjistrimit, statusi, reminder_sent)
-             VALUES ($1, $2, $3, NOW(), 'pending', false) RETURNING *`,
-            [event_id, user_id, ticket_id]
-        );
-
-        await client.query("COMMIT");
-
-        const registration = result.rows[0];
-
-        res.status(201).json({
-            message: "Regjistrimi u krye me sukses",
-            registration,
-        });
-
-        getRegistrationDetails(registration.id)
-            .then((details) => {
-                if (!details) return null;
-
-                return sendBookingConfirmation({
-                    userName: details.user_name,
-                    userEmail: details.user_email,
-                    eventName: details.event_name,
-                    eventDate: details.event_start ? new Date(details.event_start).toLocaleString() : "",
-                    eventLocation: details.event_location,
-                    bookingId: registration.id,
-                });
-            })
-            .catch((error) => {
-                console.error("Error sending confirmation email:", error.message);
-            });
-    } catch (err) {
-        await client.query("ROLLBACK").catch(() => {});
-        return res.status(500).json({ error: err.message });
-    } finally {
-        client.release();
+    if (err.message.startsWith("400:")) {
+      return res.status(400).json({ message: err.message.replace("400:", "") });
     }
+    return res.status(500).json({ error: err.message });
+  }
 };
 
-const updateRegistration = (req, res) => {
+const updateRegistration = async (req, res) => {
+  try {
     const { id } = req.params;
     const { statusi } = req.body;
 
     if (!statusi) {
-        return res.status(400).json({ message: "Ploteso statusi" });
+      return res.status(400).json({ message: "Ploteso statusi" });
     }
 
     const validStatuses = ["pending", "confirmed", "cancelled"];
     if (!validStatuses.includes(statusi)) {
-        return res.status(400).json({ message: "Statusi duhet te jete: pending, confirmed ose cancelled" });
+      return res.status(400).json({ message: "Statusi duhet te jete: pending, confirmed ose cancelled" });
     }
 
-    db.query(
-        `UPDATE "Registrations" r
-         SET statusi = $1
-         FROM "Events" e
-         WHERE r.id = $2
-           AND e.id = r.event_id
-           AND ($3::boolean OR e.organizer_id = $4)
-         RETURNING r.*`,
-        [statusi, id, isAdmin(req), req.user.id],
-        (err, result) => {
-            if (err) {
-                return res.status(500).json({ error: err.message });
-            }
-            if (result.rowCount === 0) {
-                return res.status(404).json({ message: "Regjistrimi nuk u gjet" });
-            }
-            return res.json({
-                message: "Regjistrimi u perditesua me sukses",
-                registration: result.rows[0],
-            });
-        }
-    );
+    const whereClause = { id: id };
+    if (!isAdmin(req)) {
+      whereClause.Events = {
+        organizer_id: req.user?.id,
+      };
+    }
+
+    const updateSummary = await db.registrations.updateMany({
+      where: whereClause,
+      data: { statusi: statusi },
+    });
+
+    if (updateSummary.count === 0) {
+      return res.status(404).json({ message: "Regjistrimi nuk u gjet" });
+    }
+
+    const updatedRecord = await db.registrations.findUnique({ where: { id: id } });
+
+    return res.json({
+      message: "Regjistrimi u perditesua me sukses",
+      registration: updatedRecord,
+    });
+  } catch (err) {
+    return res.status(500).json({ error: err.message });
+  }
 };
 
 const deleteRegistration = async (req, res) => {
-    const client = await db.connect();
-
-    try {
-        await client.query("BEGIN");
-
-        const result = await client.query('SELECT * FROM "Registrations" WHERE id = $1 FOR UPDATE', [req.params.id]);
-
-        if (result.rows.length === 0) {
-            await client.query("ROLLBACK");
-            return res.status(404).json({ message: "Regjistrimi nuk u gjet" });
-        }
-
-        const details = await getRegistrationDetails(req.params.id);
-        const registration = result.rows[0];
-
-        await client.query('DELETE FROM "Registrations" WHERE id = $1', [req.params.id]);
-        await client.query('UPDATE "Tickets" SET sasia = sasia + 1 WHERE id = $1', [registration.ticket_id]);
-        await client.query("COMMIT");
-
-        res.json({ message: "Regjistrimi u fshi me sukses" });
-
-        if (details) {
-            sendBookingCancellation({
-                userName: details.user_name,
-                userEmail: details.user_email,
-                eventName: details.event_name,
-            }).catch((error) => {
-                console.error("Error sending cancellation email:", error.message);
-            });
-        }
-    } catch (err) {
-        await client.query("ROLLBACK").catch(() => {});
-        return res.status(500).json({ error: err.message });
-    } finally {
-        client.release();
+  try {
+    const details = await getRegistrationDetails(req.params.id);
+    if (!details) {
+      return res.status(404).json({ message: "Regjistrimi nuk u gjet" });
     }
+
+    await db.$transaction(async (tx) => {
+      await tx.registrations.delete({
+        where: { id: req.params.id },
+      });
+
+      const ticket = await tx.tickets.findUnique({
+        where: { id: details.ticket_id },
+        select: { sasia: true },
+      });
+
+      if (ticket) {
+        await tx.tickets.update({
+          where: { id: details.ticket_id },
+          data: { sasia: (ticket.sasia || 0n) + 1n },
+        });
+      }
+    });
+
+    res.json({ message: "Regjistrimi u fshi me sukses" });
+
+    if (details) {
+      sendBookingCancellation({
+        userName: details.user_name,
+        userEmail: details.user_email,
+        eventName: details.event_name,
+      }).catch((error) => console.error("Error sending cancellation email:", error.message));
+    }
+  } catch (err) {
+    return res.status(500).json({ error: err.message });
+  }
 };
 
 const getRegistrationPDF = async (req, res) => {
-    try {
-        const registration = await getRegistrationDetails(req.params.id);
+  try {
+    const registration = await getRegistrationDetails(req.params.id);
 
-        if (!registration) {
-            return res.status(404).json({ message: "Regjistrimi nuk u gjet" });
-        }
-
-        if (!userCanAccessRegistration(req, registration)) {
-            return res.status(403).json({ message: "Access denied" });
-        }
-
-        const start = registration.event_start ? new Date(registration.event_start) : null;
-        const end = registration.event_end ? new Date(registration.event_end) : null;
-        const ticket = {
-            ticketId: registration.id,
-            eventName: registration.event_name || "Event",
-            eventDate: start ? start.toLocaleDateString() : "TBA",
-            eventTime: start ? `${start.toLocaleTimeString()}${end ? ` - ${end.toLocaleTimeString()}` : ""}` : "TBA",
-            venue: registration.event_location || "TBA",
-            attendeeName: registration.user_name || "Attendee",
-        };
-
-        res.writeHead(200, {
-            "Content-Type": "application/pdf",
-            "Content-Disposition": `attachment; filename="ticket-${ticket.ticketId}.pdf"`,
-        });
-
-        await buildPDF((chunk) => res.write(chunk), () => res.end(), ticket);
-    } catch (err) {
-        return res.status(500).json({ error: err.message });
+    if (!registration) {
+      return res.status(404).json({ message: "Regjistrimi nuk u gjet" });
     }
+
+    if (!userCanAccessRegistration(req, registration)) {
+      return res.status(403).json({ message: "Access denied" });
+    }
+
+    const start = registration.event_start ? new Date(registration.event_start) : null;
+    const end = registration.event_end ? new Date(registration.event_end) : null;
+    const ticket = {
+      ticketId: registration.id,
+      eventName: registration.event_name || "Event",
+      eventDate: start ? start.toLocaleDateString() : "TBA",
+      eventTime: start ? `${start.toLocaleTimeString()}${end ? ` - ${end.toLocaleTimeString()}` : ""}` : "TBA",
+      venue: registration.event_location || "TBA",
+      attendeeName: registration.user_name || "Attendee",
+    };
+
+    res.writeHead(200, {
+      "Content-Type": "application/pdf",
+      "Content-Disposition": `attachment; filename="ticket-${ticket.ticketId}.pdf"`,
+    });
+
+    await buildPDF((chunk) => res.write(chunk), () => res.end(), ticket);
+  } catch (err) {
+    return res.status(500).json({ error: err.message });
+  }
 };
 
 const getRegistrationQRCode = async (req, res) => {
-    try {
-        const registration = await getRegistrationDetails(req.params.id);
+  try {
+    const registration = await getRegistrationDetails(req.params.id);
 
-        if (!registration) {
-            return res.status(404).json({ message: "Regjistrimi nuk u gjet" });
-        }
-
-        if (!userCanAccessRegistration(req, registration)) {
-            return res.status(403).json({ message: "Access denied" });
-        }
-
-        const qrBuffer = await generateTicketQR(registration.id);
-
-        res.writeHead(200, {
-            "Content-Type": "image/png",
-            "Content-Disposition": `inline; filename="registration-${registration.id}-qr.png"`,
-        });
-
-        return res.end(qrBuffer);
-    } catch (err) {
-        return res.status(500).json({ error: err.message });
+    if (!registration) {
+      return res.status(404).json({ message: "Regjistrimi nuk u gjet" });
     }
+
+    if (!userCanAccessRegistration(req, registration)) {
+      return res.status(403).json({ message: "Access denied" });
+    }
+
+    const qrBuffer = await generateTicketQR(registration.id);
+
+    res.writeHead(200, {
+      "Content-Type": "image/png",
+      "Content-Disposition": `inline; filename="registration-${registration.id}-qr.png"`,
+    });
+
+    return res.end(qrBuffer);
+  } catch (err) {
+    return res.status(500).json({ error: err.message });
+  }
 };
 
 module.exports = {
-    getRegistrations,
-    getRegistrationById,
-    getRegistrationsByEvent,
-    getRegistrationsByUser,
-    createRegistration,
-    updateRegistration,
-    deleteRegistration,
-    getRegistrationPDF,
-    getRegistrationQRCode,
+  getRegistrations,
+  getRegistrationById,
+  getRegistrationsByEvent,
+  getRegistrationsByUser,
+  createRegistration,
+  updateRegistration,
+  deleteRegistration,
+  getRegistrationPDF,
+  getRegistrationQRCode,
 };

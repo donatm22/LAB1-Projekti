@@ -1,1 +1,3 @@
-module.exports = require("./pool");
+const db= require('../backend/config/prisma');
+
+module.exports = db;

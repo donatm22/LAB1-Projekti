@@ -1,96 +1,123 @@
 const db = require("../../database/db");
 
-const getTicketTypes = (req, res) => {
-  db.query('SELECT * FROM "TicketTypes" ORDER BY id ASC', (err, result) => {
-    if (err) {
-      return res.status(500).json({ error: err.message });
-    }
+const serializeTicketType = (data) => {
+  if (!data) return null;
+  if (Array.isArray(data)) return data.map((item) => serializeTicketType(item));
 
-    res.json(result.rows);
-  });
+  return {
+    ...data,
+    cmimi: data.cmimi !== null && data.cmimi !== undefined ? Number(data.cmimi) : null,
+    sasia_total: data.sasia_total !== null && data.sasia_total !== undefined ? Number(data.sasia_total) : null,
+    sasia_mbetur: data.sasia_mbetur !== null && data.sasia_mbetur !== undefined ? Number(data.sasia_mbetur) : null,
+  };
 };
 
-const getTicketTypeById = (req, res) => {
-  const { id } = req.params;
-
-  db.query('SELECT * FROM "TicketTypes" WHERE id = $1', [id], (err, result) => {
-    if (err) {
-      return res.status(500).json({ error: err.message });
-    }
-
-    if (result.rows.length === 0) {
-      return res.status(404).json({ message: "Lloji i biletës nuk u gjet" });
-    }
-
-    res.json(result.rows[0]);
-  });
-};
-
-const createTicketType = (req, res) => {
-  const { event_id, emri_llojit, pershkrimi, cmimi, sasia_total, sasia_mbetur, statusi } = req.body;
-
-  db.query(
-    'INSERT INTO "TicketTypes" (event_id, emri_llojit, pershkrimi, cmimi, sasia_total, sasia_mbetur, statusi) VALUES ($1, $2, $3, $4, $5, $6, $7) RETURNING *',
-    [event_id || null, emri_llojit || null, pershkrimi || null, cmimi || null, sasia_total || null, sasia_mbetur || null, statusi || null],
-    (err, result) => {
-      if (err) {
-        return res.status(500).json({ error: err.message });
-      }
-
-      res.status(201).json({
-        message: "Lloji i biletës u shtua me sukses",
-        ticketType: result.rows[0]
-      });
-    }
-  );
-};
-
-const updateTicketType = (req, res) => {
-  const { id } = req.params;
-  const { event_id, emri_llojit, pershkrimi, cmimi, sasia_total, sasia_mbetur, statusi } = req.body;
-
-  db.query(
-    'UPDATE "TicketTypes" SET event_id = $1, emri_llojit = $2, pershkrimi = $3, cmimi = $4, sasia_total = $5, sasia_mbetur = $6, statusi = $7 WHERE id = $8 RETURNING *',
-    [event_id || null, emri_llojit || null, pershkrimi || null, cmimi || null, sasia_total || null, sasia_mbetur || null, statusi || null, id],
-    (err, result) => {
-      if (err) {
-        return res.status(500).json({ error: err.message });
-      }
-
-      if (result.rows.length === 0) {
-        return res.status(404).json({ message: "Lloji i biletës nuk u gjet" });
-      }
-
-      res.json({
-        message: "Lloji i biletës u perditesua me sukses",
-        ticketType: result.rows[0]
-      });
-    }
-  );
-};
-
-const deleteTicketType = (req, res) => {
-  const { id } = req.params;
-  const isOrganizer = req.user?.roli === "organizer";
-
-  // Only admins can delete ticket types
-  if (isOrganizer) {
-    return res.status(403).json({
-      message: "Access denied. Only admins can delete ticket types."
+const getTicketTypes = async (req, res) => {
+  try {
+    const ticketTypes = await db.ticketTypes.findMany({
+      orderBy: { id: "asc" },
     });
+    return res.json(serializeTicketType(ticketTypes));
+  } catch (err) {
+    return res.status(500).json({ error: err.message });
   }
+};
 
-  db.query('DELETE FROM "TicketTypes" WHERE id = $1', [id], (err, result) => {
-    if (err) {
-      return res.status(500).json({ error: err.message });
-    }
+const getTicketTypeById = async (req, res) => {
+  try {
+    const { id } = req.params;
 
-    if (result.rowCount === 0) {
+    const ticketType = await db.ticketTypes.findUnique({
+      where: { id: id },
+    });
+
+    if (!ticketType) {
       return res.status(404).json({ message: "Lloji i biletës nuk u gjet" });
     }
 
-    res.json({ message: "Lloji i biletës u fshi me sukses" });
-  });
+    return res.json(serializeTicketType(ticketType));
+  } catch (err) {
+    return res.status(500).json({ error: err.message });
+  }
+};
+
+const createTicketType = async (req, res) => {
+  try {
+    const { event_id, emri_llojit, pershkrimi, cmimi, sasia_total, sasia_mbetur, statusi } = req.body;
+
+    const newTicketType = await db.ticketTypes.create({
+      data: {
+        event_id: event_id || null,
+        emri_llojit: emri_llojit || null,
+        pershkrimi: pershkrimi || null,
+        cmimi: cmimi !== undefined ? cmimi : null,
+        sasia_total: sasia_total !== undefined ? BigInt(sasia_total) : null,
+        sasia_mbetur: sasia_mbetur !== undefined ? BigInt(sasia_mbetur) : null,
+        statusi: statusi || null,
+      },
+    });
+
+    return res.status(201).json({
+      message: "Lloji i biletës u shtua me sukses",
+      ticketType: serializeTicketType(newTicketType),
+    });
+  } catch (err) {
+    return res.status(500).json({ error: err.message });
+  }
+};
+
+const updateTicketType = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { event_id, emri_llojit, pershkrimi, cmimi, sasia_total, sasia_mbetur, statusi } = req.body;
+
+    const updatedTicketType = await db.ticketTypes.update({
+      where: { id: id },
+      data: {
+        event_id: event_id !== undefined ? event_id : undefined,
+        emri_llojit: emri_llojit !== undefined ? emri_llojit : undefined,
+        pershkrimi: pershkrimi !== undefined ? pershkrimi : undefined,
+        cmimi: cmimi !== undefined ? cmimi : undefined,
+        sasia_total: sasia_total !== undefined ? BigInt(sasia_total) : undefined,
+        sasia_mbetur: sasia_mbetur !== undefined ? BigInt(sasia_mbetur) : undefined,
+        statusi: statusi !== undefined ? statusi : undefined,
+      },
+    });
+
+    return res.json({
+      message: "Lloji i biletës u perditesua me sukses",
+      ticketType: serializeTicketType(updatedTicketType),
+    });
+  } catch (err) {
+    if (err.code === "P2025") {
+      return res.status(404).json({ message: "Lloji i biletës nuk u gjet" });
+    }
+    return res.status(500).json({ error: err.message });
+  }
+};
+
+const deleteTicketType = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const isOrganizer = req.user?.roli === "organizer";
+
+    if (isOrganizer) {
+      return res.status(403).json({
+        message: "Access denied. Only admins can delete ticket types.",
+      });
+    }
+
+    await db.ticketTypes.delete({
+      where: { id: id },
+    });
+
+    return res.json({ message: "Lloji i biletës u fshi me sukses" });
+  } catch (err) {
+    if (err.code === "P2025") {
+      return res.status(404).json({ message: "Lloji i biletës nuk u gjet" });
+    }
+    return res.status(500).json({ error: err.message });
+  }
 };
 
 module.exports = {
@@ -98,5 +125,5 @@ module.exports = {
   getTicketTypeById,
   createTicketType,
   updateTicketType,
-  deleteTicketType
+  deleteTicketType,
 };
