@@ -5,6 +5,40 @@ CREATE SCHEMA IF NOT EXISTS "public";
 CREATE TYPE "user_role" AS ENUM ('admin', 'organizer', 'user');
 
 -- CreateTable
+CREATE TABLE "Users" (
+    "id" UUID NOT NULL DEFAULT gen_random_uuid(),
+    "emri" TEXT,
+    "email" TEXT,
+    "password" TEXT,
+    "roli" "user_role",
+    "created_at" TIMESTAMP(6) DEFAULT CURRENT_TIMESTAMP,
+    "emri_organizates" TEXT,
+    "pershkrimi" TEXT,
+    "telefoni" TEXT,
+    "website" TEXT,
+
+    CONSTRAINT "Users_pkey" PRIMARY KEY ("id")
+);
+
+-- CreateTable
+CREATE TABLE "Events" (
+    "id" UUID NOT NULL DEFAULT gen_random_uuid(),
+    "titulli" TEXT,
+    "pershkrimi" TEXT,
+    "data_fillimit" TIMESTAMP(6),
+    "data_perfundimit" TIMESTAMP(6),
+    "lokacioni" TEXT,
+    "kapaciteti" BIGINT,
+    "statusi" TEXT,
+    "organizer_id" UUID DEFAULT gen_random_uuid(),
+    "category_id" UUID DEFAULT gen_random_uuid(),
+    "imazhi" TEXT,
+    "venue_id" UUID,
+
+    CONSTRAINT "Events_pkey" PRIMARY KEY ("id")
+);
+
+-- CreateTable
 CREATE TABLE "Attendance" (
     "id" UUID NOT NULL DEFAULT gen_random_uuid(),
     "registration_id" UUID DEFAULT gen_random_uuid(),
@@ -63,25 +97,6 @@ CREATE TABLE "Event_Sponsors" (
 );
 
 -- CreateTable
-CREATE TABLE "Events" (
-    "id" UUID NOT NULL DEFAULT gen_random_uuid(),
-    "titulli" TEXT,
-    "pershkrimi" TEXT,
-    "data_fillimit" TIMESTAMP(6),
-    "data_perfundimit" TIMESTAMP(6),
-    "lokacioni" TEXT,
-    "kapaciteti" BIGINT,
-    "statusi" TEXT,
-    "organizer_id" UUID DEFAULT gen_random_uuid(),
-    "category_id" UUID DEFAULT gen_random_uuid(),
-    "imazhi" TEXT,
-    "venue_id" UUID,
-    "organizer_entity_id" UUID,
-
-    CONSTRAINT "Events_pkey" PRIMARY KEY ("id")
-);
-
--- CreateTable
 CREATE TABLE "Feedback" (
     "id" UUID NOT NULL DEFAULT gen_random_uuid(),
     "event_id" UUID DEFAULT gen_random_uuid(),
@@ -91,19 +106,6 @@ CREATE TABLE "Feedback" (
     "data" TIMESTAMP(6),
 
     CONSTRAINT "Feedback_pkey" PRIMARY KEY ("id")
-);
-
--- CreateTable
-CREATE TABLE "Organizers" (
-    "id" UUID NOT NULL DEFAULT gen_random_uuid(),
-    "emri_organizates" TEXT,
-    "pershkrimi" TEXT,
-    "email" TEXT,
-    "telefoni" TEXT,
-    "website" TEXT,
-    "created_at" TIMESTAMPTZ(6) NOT NULL DEFAULT CURRENT_TIMESTAMP,
-
-    CONSTRAINT "Organizers_pkey" PRIMARY KEY ("id")
 );
 
 -- CreateTable
@@ -194,18 +196,6 @@ CREATE TABLE "Tickets" (
 );
 
 -- CreateTable
-CREATE TABLE "Users" (
-    "id" UUID NOT NULL DEFAULT gen_random_uuid(),
-    "emri" TEXT,
-    "email" TEXT DEFAULT 'unique',
-    "password" TEXT,
-    "roli" "user_role",
-    "created_at" TIMESTAMP(6) DEFAULT CURRENT_TIMESTAMP,
-
-    CONSTRAINT "Users_pkey" PRIMARY KEY ("id")
-);
-
--- CreateTable
 CREATE TABLE "Venues" (
     "id" UUID NOT NULL DEFAULT gen_random_uuid(),
     "emri" TEXT,
@@ -228,6 +218,9 @@ CREATE TABLE "schema_migrations" (
 );
 
 -- CreateIndex
+CREATE UNIQUE INDEX "Users_email_key" ON "Users"("email");
+
+-- CreateIndex
 CREATE UNIQUE INDEX "RefreshTokens_token_jti_key" ON "RefreshTokens"("token_jti");
 
 -- CreateIndex
@@ -241,6 +234,15 @@ CREATE INDEX "idx_refresh_tokens_user_id" ON "RefreshTokens"("user_id");
 
 -- CreateIndex
 CREATE UNIQUE INDEX "schema_migrations_filename_key" ON "schema_migrations"("filename");
+
+-- AddForeignKey
+ALTER TABLE "Events" ADD CONSTRAINT "Events_category_id_fkey" FOREIGN KEY ("category_id") REFERENCES "EventCategories"("id") ON DELETE NO ACTION ON UPDATE NO ACTION;
+
+-- AddForeignKey
+ALTER TABLE "Events" ADD CONSTRAINT "Events_organizer_id_fkey" FOREIGN KEY ("organizer_id") REFERENCES "Users"("id") ON DELETE NO ACTION ON UPDATE NO ACTION;
+
+-- AddForeignKey
+ALTER TABLE "Events" ADD CONSTRAINT "Events_venue_id_fkey" FOREIGN KEY ("venue_id") REFERENCES "Venues"("id") ON DELETE NO ACTION ON UPDATE NO ACTION;
 
 -- AddForeignKey
 ALTER TABLE "Attendance" ADD CONSTRAINT "Attendance_event_id_fkey" FOREIGN KEY ("event_id") REFERENCES "Events"("id") ON DELETE NO ACTION ON UPDATE NO ACTION;
@@ -268,18 +270,6 @@ ALTER TABLE "Event_Sponsors" ADD CONSTRAINT "Event_Sponsors_event_id_fkey" FOREI
 
 -- AddForeignKey
 ALTER TABLE "Event_Sponsors" ADD CONSTRAINT "Event_Sponsors_sponsor_id_fkey" FOREIGN KEY ("sponsor_id") REFERENCES "Sponsors"("id") ON DELETE NO ACTION ON UPDATE NO ACTION;
-
--- AddForeignKey
-ALTER TABLE "Events" ADD CONSTRAINT "Events_category_id_fkey" FOREIGN KEY ("category_id") REFERENCES "EventCategories"("id") ON DELETE NO ACTION ON UPDATE NO ACTION;
-
--- AddForeignKey
-ALTER TABLE "Events" ADD CONSTRAINT "Events_organizer_entity_id_fkey" FOREIGN KEY ("organizer_entity_id") REFERENCES "Organizers"("id") ON DELETE NO ACTION ON UPDATE NO ACTION;
-
--- AddForeignKey
-ALTER TABLE "Events" ADD CONSTRAINT "Events_organizer_id_fkey" FOREIGN KEY ("organizer_id") REFERENCES "Users"("id") ON DELETE NO ACTION ON UPDATE NO ACTION;
-
--- AddForeignKey
-ALTER TABLE "Events" ADD CONSTRAINT "Events_venue_id_fkey" FOREIGN KEY ("venue_id") REFERENCES "Venues"("id") ON DELETE NO ACTION ON UPDATE NO ACTION;
 
 -- AddForeignKey
 ALTER TABLE "Feedback" ADD CONSTRAINT "Feedback_event_id_fkey" FOREIGN KEY ("event_id") REFERENCES "Events"("id") ON DELETE NO ACTION ON UPDATE NO ACTION;

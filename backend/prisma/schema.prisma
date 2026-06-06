@@ -8,56 +8,47 @@ datasource db {
 }
 
 model Users {
-  id         String     @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
-  emri       String?
-  email      String?    @unique
-  password   String?
-  roli       user_role?
-  created_at DateTime?  @default(now()) @db.Timestamp(6)
-
-  // Clean Profile Extensions for users with the 'organizer' role
+  id               String          @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  emri             String?
+  email            String?         @unique
+  password         String?
+  roli             user_role?
+  created_at       DateTime?       @default(now()) @db.Timestamp(6)
   emri_organizates String?
   pershkrimi       String?
   telefoni         String?
   website          String?
-
-  Attendance    Attendance[]
-  Events        Events[]        @relation("UserEvents")
-  Feedback      Feedback[]
-  RefreshTokens RefreshTokens[]
-  Registrations Registrations[]
+  Attendance       Attendance[]
+  Events           Events[]        @relation("UserEvents")
+  Feedback         Feedback[]
+  RefreshTokens    RefreshTokens[]
+  Registrations    Registrations[]
 }
 
 model Events {
-  id               String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  id               String           @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
   titulli          String?
   pershkrimi       String?
-  data_fillimit    DateTime? @db.Timestamp(6)
-  data_perfundimit DateTime? @db.Timestamp(6)
+  data_fillimit    DateTime?        @db.Timestamp(6)
+  data_perfundimit DateTime?        @db.Timestamp(6)
   lokacioni        String?
   kapaciteti       BigInt?
   statusi          String?
-  category_id      String?   @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  organizer_id     String?          @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  category_id      String?          @default(dbgenerated("gen_random_uuid()")) @db.Uuid
   imazhi           String?
-  venue_id         String?   @db.Uuid
-
-  // Anchored explicitly to the organizer user
-  organizer_id String? @default(dbgenerated("gen_random_uuid()")) @db.Uuid
-
-  Attendance      Attendance[]
-  EventSchedules  EventSchedules[]
-  Event_Speakers  Event_Speakers[]
-  Event_Sponsors  Event_Sponsors[]
-  EventCategories EventCategories? @relation(fields: [category_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
-
-  // Cleaned relationship pointing directly to Users
-  OrganizerUser Users? @relation("UserEvents", fields: [organizer_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
-
-  Venues        Venues?         @relation(fields: [venue_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
-  Feedback      Feedback[]
-  Registrations Registrations[]
-  TicketTypes   TicketTypes[]
-  Tickets       Tickets[]
+  venue_id         String?          @db.Uuid
+  Attendance       Attendance[]
+  EventSchedules   EventSchedules[]
+  Event_Speakers   Event_Speakers[]
+  Event_Sponsors   Event_Sponsors[]
+  EventCategories  EventCategories? @relation(fields: [category_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  OrganizerUser    Users?           @relation("UserEvents", fields: [organizer_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  Venues           Venues?          @relation(fields: [venue_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  Feedback         Feedback[]
+  Registrations    Registrations[]
+  TicketTypes      TicketTypes[]
+  Tickets          Tickets[]
 }
 
 model Attendance {
