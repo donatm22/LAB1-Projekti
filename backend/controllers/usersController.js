@@ -16,14 +16,42 @@ const userSelectionFields = {
   created_at: true,
 };
 
+const buildUserWhere = (query = {}) => {
+  const where = {};
+  const role = trimString(query.role || query.roli);
+  const search = trimString(query.search || query.q);
+
+  if (role) {
+    if (!allowedRoles.has(role)) {
+      const error = new Error("Roli nuk eshte valid");
+      error.statusCode = 400;
+      throw error;
+    }
+    where.roli = role;
+  }
+
+  if (search) {
+    where.OR = [
+      { emri: { contains: search, mode: "insensitive" } },
+      { email: { contains: search, mode: "insensitive" } },
+    ];
+  }
+
+  return where;
+};
+
 const getUsers = async (req, res) => {
   try {
     const users = await db.users.findMany({
+      where: buildUserWhere(req.query),
       select: userSelectionFields,
       orderBy: { id: "asc" },
     });
     return res.json(users);
   } catch (err) {
+    if (err.statusCode) {
+      return res.status(err.statusCode).json({ message: err.message });
+    }
     return res.status(500).json({ error: err.message });
   }
 };

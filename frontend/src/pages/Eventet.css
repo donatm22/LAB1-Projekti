@@ -86,6 +86,55 @@ html, body {
   color: #1a0d00;
 }
 
+.advanced-filter-row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: end;
+  gap: 12px;
+  margin-top: 18px;
+  animation: fadeUp 1s ease 0.01s forwards;
+}
+
+.filter-field {
+  display: grid;
+  gap: 6px;
+  color: var(--color-ink-muted);
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.filter-field input {
+  width: 130px;
+  min-height: 40px;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-sm);
+  background: transparent;
+  color: var(--color-ink);
+  font: inherit;
+  letter-spacing: 0;
+  padding: 8px 12px;
+}
+
+.filter-check {
+  min-height: 40px;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 12px;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-sm);
+  color: var(--color-ink-muted);
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.filter-check input {
+  accent-color: var(--color-accent-light);
+}
+
 .hero-rule {
   display: flex;
   align-items: center;

@@ -17,6 +17,27 @@ const generateCacheKey = (path, options) => {
   return `${method}:${path}:${token}`;
 };
 
+const buildQueryString = (params = {}) => {
+  const searchParams = new URLSearchParams();
+
+  Object.entries(params).forEach(([key, value]) => {
+    if (value === undefined || value === null || value === "") {
+      return;
+    }
+    searchParams.set(key, String(value));
+  });
+
+  const queryString = searchParams.toString();
+  return queryString ? `?${queryString}` : "";
+};
+
+const normalizeFiltersAndToken = (filters, token) => {
+  if (typeof filters === "string") {
+    return { filters: {}, token: filters };
+  }
+
+  return { filters: filters || {}, token };
+};
 
 const getCachedResponse = (cacheKey) => {
   const cached = requestCache.get(cacheKey);
@@ -243,8 +264,9 @@ export const authApi = {
 };
 
 export const usersApi = {
-  getAll(token = tokenStorage.getToken()) {
-    return request("/users", { token });
+  getAll(filters = {}, token = tokenStorage.getToken()) {
+    const normalized = normalizeFiltersAndToken(filters, token);
+    return request(`/users${buildQueryString(normalized.filters)}`, { token: normalized.token });
   },
   getById(id, token = tokenStorage.getToken()) {
     return request(`/users/${id}`, { token });
@@ -277,11 +299,19 @@ export const usersApi = {
 };
 
 export const eventsApi = {
-  getAll(token = tokenStorage.getToken()) {
-    return request("/event", { token, useCache: false });
+  getAll(filters = {}, token = tokenStorage.getToken()) {
+    const normalized = normalizeFiltersAndToken(filters, token);
+    return request(`/event${buildQueryString(normalized.filters)}`, {
+      token: normalized.token,
+      useCache: false,
+    });
   },
-  getManaged(token = tokenStorage.getToken()) {
-    return request("/event/managed", { token, useCache: false });
+  getManaged(filters = {}, token = tokenStorage.getToken()) {
+    const normalized = normalizeFiltersAndToken(filters, token);
+    return request(`/event/managed${buildQueryString(normalized.filters)}`, {
+      token: normalized.token,
+      useCache: false,
+    });
   },
   getById(id) {
     return request(`/event/${id}`);
@@ -354,8 +384,9 @@ export const speakersApi = {
 };
 
 export const ticketsApi = {
-  getAll(token = tokenStorage.getToken()) {
-    return request("/ticket", { token });
+  getAll(filters = {}, token = tokenStorage.getToken()) {
+    const normalized = normalizeFiltersAndToken(filters, token);
+    return request(`/ticket${buildQueryString(normalized.filters)}`, { token: normalized.token });
   },
   getById(id) {
     return request(`/ticket/${id}`);

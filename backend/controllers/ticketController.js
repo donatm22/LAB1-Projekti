@@ -8,6 +8,55 @@ const {
 
 const isAdmin = (req) => req.user?.roli === "admin";
 
+const parseBoolean = (value) => {
+  if (value === undefined) return null;
+  const normalized = trimString(value).toLowerCase();
+  if (["true", "1", "yes"].includes(normalized)) return true;
+  if (["false", "0", "no"].includes(normalized)) return false;
+  return null;
+};
+
+const parseNumberFilter = (value) => {
+  if (value === undefined || value === "") return null;
+  const parsed = Number(value);
+  return Number.isFinite(parsed) && parsed >= 0 ? parsed : null;
+};
+
+const buildTicketWhere = (query = {}) => {
+  const where = {};
+  const eventId = trimString(query.eventId || query.event_id);
+  const type = trimString(query.type || query.tipi);
+  const minPrice = parseNumberFilter(query.minPrice);
+  const maxPrice = parseNumberFilter(query.maxPrice);
+  const available = parseBoolean(query.available || query.active);
+  const soldOut = parseBoolean(query.soldOut);
+
+  if (eventId) {
+    where.event_id = eventId;
+  }
+
+  if (type) {
+    where.tipi = { contains: type, mode: "insensitive" };
+  }
+
+  if (minPrice !== null || maxPrice !== null) {
+    where.cmimi = {
+      ...(minPrice !== null ? { gte: minPrice } : {}),
+      ...(maxPrice !== null ? { lte: maxPrice } : {}),
+    };
+  }
+
+  if (available === true) {
+    where.sasia = { gt: 0 };
+  }
+
+  if (soldOut === true) {
+    where.sasia = { lte: 0 };
+  }
+
+  return where;
+};
+
 const serializeTicket = (ticket) => {
   if (!ticket) return null;
   if (Array.isArray(ticket)) return ticket.map(serializeTicket);
@@ -38,6 +87,7 @@ const verifyEventWriteAccess = async (req, eventId) => {
 const getTickets = async (req, res) => {
   try {
     const tickets = await db.tickets.findMany({
+      where: buildTicketWhere(req.query),
       orderBy: { id: "asc" },
     });
     return res.json(serializeTicket(tickets));

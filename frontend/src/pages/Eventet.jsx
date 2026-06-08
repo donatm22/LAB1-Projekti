@@ -8,27 +8,29 @@ import { mapApiEventToCard } from "../utils/eventMapper";
 import "./Eventet.css";
 
 const EventsPage = () => {
-  const [activeFilter, setActiveFilter] = useState("all");
   const [apiEvents, setApiEvents] = useState([]);
+  const [categories, setCategories] = useState([]);
   const [filters, setFilters] = useState([{ id: "all", label: "All" }]);
-  const [searchParams] = useSearchParams();
-  const searchQuery = (searchParams.get("q") || "").trim().toLowerCase();
+  const [searchParams, setSearchParams] = useSearchParams();
+  const activeFilter = searchParams.get("category") || "all";
+  const searchQuery = (searchParams.get("q") || "").trim();
+  const minPrice = searchParams.get("minPrice") || "";
+  const maxPrice = searchParams.get("maxPrice") || "";
+  const upcomingOnly = searchParams.get("upcoming") === "true";
+  const availableOnly = searchParams.get("available") === "true";
 
   useEffect(() => {
     let isMounted = true;
 
-    Promise.all([eventsApi.getAll(), eventCategoriesApi.getAll()])
-      .then(([events, categories]) => {
+    eventCategoriesApi.getAll()
+      .then((loadedCategories) => {
         if (!isMounted) {
           return;
         }
 
-        const mappedCategories = Array.isArray(categories) ? categories : [];
-        const mappedEvents = Array.isArray(events)
-          ? events.map((event) => mapApiEventToCard(event, mappedCategories))
-          : [];
+        const mappedCategories = Array.isArray(loadedCategories) ? loadedCategories : [];
 
-        setApiEvents(mappedEvents);
+        setCategories(mappedCategories);
         setFilters([
           { id: "all", label: "All" },
           ...mappedCategories.map((category) => ({
@@ -46,27 +48,54 @@ const EventsPage = () => {
     };
   }, []);
 
-  const visibleEvents = useMemo(
-    () =>
-      apiEvents.filter((event) => {
-        const matchesFilter =
-          activeFilter === "all" || String(event.categoryId) === String(activeFilter);
+  useEffect(() => {
+    let isMounted = true;
 
-        const searchableText = [
-          event.title,
-          event.speaker,
-          event.category,
-          event.location,
-          event.date,
-        ]
-          .filter(Boolean)
-          .join(" ")
-          .toLowerCase();
+    eventsApi
+      .getAll({
+        q: searchQuery,
+        category: activeFilter === "all" ? "" : activeFilter,
+        minPrice,
+        maxPrice,
+        upcoming: upcomingOnly ? "true" : "",
+        available: availableOnly ? "true" : "",
+      })
+      .then((events) => {
+        if (!isMounted) {
+          return;
+        }
 
-        return matchesFilter && (!searchQuery || searchableText.includes(searchQuery));
-      }),
-    [activeFilter, apiEvents, searchQuery]
-  );
+        const mappedEvents = Array.isArray(events)
+          ? events.map((event) => mapApiEventToCard(event, categories))
+          : [];
+
+        setApiEvents(mappedEvents);
+      })
+      .catch((error) => {
+        console.error("Failed to load events:", error);
+        if (isMounted) {
+          setApiEvents([]);
+        }
+      });
+
+    return () => {
+      isMounted = false;
+    };
+  }, [activeFilter, availableOnly, categories, maxPrice, minPrice, searchQuery, upcomingOnly]);
+
+  const updateFilterParam = (key, value) => {
+    const nextParams = new URLSearchParams(searchParams);
+
+    if (value) {
+      nextParams.set(key, value);
+    } else {
+      nextParams.delete(key);
+    }
+
+    setSearchParams(nextParams, { replace: true });
+  };
+
+  const visibleEvents = useMemo(() => apiEvents, [apiEvents]);
 
   return (
     <div>
@@ -85,11 +114,48 @@ const EventsPage = () => {
                   key={filter.id}
                   type="button"
                   className={`filter-btn ${activeFilter === filter.id ? "filter-btn--active" : ""}`}
-                  onClick={() => setActiveFilter(filter.id)}
+                  onClick={() => updateFilterParam("category", filter.id === "all" ? "" : filter.id)}
                 >
                   {filter.label}
                 </button>
               ))}
+            </div>
+
+            <div className="advanced-filter-row" aria-label="Advanced event filters">
+              <label className="filter-field">
+                <span>Min price</span>
+                <input
+                  type="number"
+                  min="0"
+                  value={minPrice}
+                  onChange={(event) => updateFilterParam("minPrice", event.target.value)}
+                />
+              </label>
+              <label className="filter-field">
+                <span>Max price</span>
+                <input
+                  type="number"
+                  min="0"
+                  value={maxPrice}
+                  onChange={(event) => updateFilterParam("maxPrice", event.target.value)}
+                />
+              </label>
+              <label className="filter-check">
+                <input
+                  type="checkbox"
+                  checked={upcomingOnly}
+                  onChange={(event) => updateFilterParam("upcoming", event.target.checked ? "true" : "")}
+                />
+                <span>Upcoming</span>
+              </label>
+              <label className="filter-check">
+                <input
+                  type="checkbox"
+                  checked={availableOnly}
+                  onChange={(event) => updateFilterParam("available", event.target.checked ? "true" : "")}
+                />
+                <span>Available</span>
+              </label>
             </div>
           </div>
 

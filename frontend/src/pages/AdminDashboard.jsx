@@ -308,9 +308,9 @@ function AdminDashboard() {
     categories: { column: null, dir: "asc" },
   });
   const [filters, setFilters] = useState({
-  events: { category_id: "" },
-  speakers: { event_id: "" },
-  tickets: { tipi: "", event_id: "" },
+  events: { category_id: "", statusi: "", upcoming: "" },
+  speakers: {},
+  tickets: { tipi: "", event_id: "", availability: "", minPrice: "", maxPrice: "" },
   users: { roli: "" },
   categories: {},
 });
@@ -567,6 +567,7 @@ function AdminDashboard() {
   const items = activeItems || [];
   const query = (searchQueries[activeResource] || "").trim().toLowerCase();
   const activeFilters = filters[activeResource] || {};
+  const now = new Date();
 
   const filtered = items.filter((item) => {
     // Search
@@ -580,6 +581,32 @@ function AdminDashboard() {
     // Filters
     for (const [key, value] of Object.entries(activeFilters)) {
       if (value === "" || value === null || value === undefined) continue;
+
+      if (key === "upcoming") {
+        const eventDate = new Date(item.data_fillimit);
+        const isUpcoming = !Number.isNaN(eventDate.getTime()) && eventDate >= now;
+        if (value === "true" && !isUpcoming) return false;
+        if (value === "false" && isUpcoming) return false;
+        continue;
+      }
+
+      if (key === "availability") {
+        const quantity = Number(item.sasia ?? 0);
+        if (value === "available" && quantity <= 0) return false;
+        if (value === "soldOut" && quantity > 0) return false;
+        continue;
+      }
+
+      if (key === "minPrice") {
+        if (Number(item.cmimi ?? 0) < Number(value)) return false;
+        continue;
+      }
+
+      if (key === "maxPrice") {
+        if (Number(item.cmimi ?? 0) > Number(value)) return false;
+        continue;
+      }
+
       if (String(item[key]) !== String(value)) return false;
     }
 
@@ -609,6 +636,31 @@ function AdminDashboard() {
       return { ...cur, [activeResource]: { column, dir: "asc" } };
     });
   };
+
+  const updateResourceFilter = (resource, key, value) => {
+    setFilters((current) => ({
+      ...current,
+      [resource]: {
+        ...current[resource],
+        [key]: value,
+      },
+    }));
+  };
+
+  const clearResourceFilters = (resource) => {
+    setFilters((current) => ({
+      ...current,
+      [resource]: Object.fromEntries(
+        Object.keys(current[resource] || {}).map((key) => [key, ""])
+      ),
+    }));
+    setSearchQueries((current) => ({ ...current, [resource]: "" }));
+  };
+
+  const eventStatusOptions = useMemo(
+    () => [...new Set(data.events.map((event) => event.statusi).filter(Boolean))],
+    [data.events]
+  );
 
   return (
     <div className="admin-page">
@@ -787,6 +839,9 @@ function AdminDashboard() {
                     value={searchQueries[activeResource] || ""}
                     onChange={(e) => setSearchQueries((cur) => ({ ...cur, [activeResource]: e.target.value }))}
                   />
+                  <button type="button" className="ghost-btn" onClick={() => clearResourceFilters(activeResource)}>
+                    Clear filters
+                  </button>
                   <button type="button" className="ghost-btn" onClick={loadDashboard}>
                     Refresh
                   </button>
@@ -794,31 +849,33 @@ function AdminDashboard() {
               </div>
 
 
-                            {/* Filter Bar */}
               {activeResource === "events" && (
                 <div className="filter-bar">
                   <select
                     value={filters.events.category_id}
-                    onChange={(e) => setFilters((f) => ({ ...f, events: { ...f.events, category_id: e.target.value } }))}
+                    onChange={(e) => updateResourceFilter("events", "category_id", e.target.value)}
                   >
                     <option value="">All categories</option>
                     {data.categories.map((cat) => (
                       <option key={cat.id} value={cat.id}>{cat.emri}</option>
                     ))}
                   </select>
-                </div>
-              )}
-
-              {activeResource === "speakers" && (
-                <div className="filter-bar">
                   <select
-                    value={filters.speakers.event_id}
-                    onChange={(e) => setFilters((f) => ({ ...f, speakers: { ...f.speakers, event_id: e.target.value } }))}
+                    value={filters.events.statusi}
+                    onChange={(e) => updateResourceFilter("events", "statusi", e.target.value)}
                   >
-                    <option value="">All events</option>
-                    {data.events.map((ev) => (
-                      <option key={ev.id} value={ev.id}>{ev.titulli}</option>
+                    <option value="">All statuses</option>
+                    {eventStatusOptions.map((status) => (
+                      <option key={status} value={status}>{status}</option>
                     ))}
+                  </select>
+                  <select
+                    value={filters.events.upcoming}
+                    onChange={(e) => updateResourceFilter("events", "upcoming", e.target.value)}
+                  >
+                    <option value="">Any date</option>
+                    <option value="true">Upcoming</option>
+                    <option value="false">Past</option>
                   </select>
                 </div>
               )}
@@ -827,7 +884,7 @@ function AdminDashboard() {
                 <div className="filter-bar">
                   <select
                     value={filters.tickets.event_id}
-                    onChange={(e) => setFilters((f) => ({ ...f, tickets: { ...f.tickets, event_id: e.target.value } }))}
+                    onChange={(e) => updateResourceFilter("tickets", "event_id", e.target.value)}
                   >
                     <option value="">All events</option>
                     {data.events.map((ev) => (
@@ -836,13 +893,35 @@ function AdminDashboard() {
                   </select>
                   <select
                     value={filters.tickets.tipi}
-                    onChange={(e) => setFilters((f) => ({ ...f, tickets: { ...f.tickets, tipi: e.target.value } }))}
+                    onChange={(e) => updateResourceFilter("tickets", "tipi", e.target.value)}
                   >
                     <option value="">All types</option>
                     {[...new Set(data.tickets.map((t) => t.tipi).filter(Boolean))].map((tipi) => (
                       <option key={tipi} value={tipi}>{tipi}</option>
                     ))}
                   </select>
+                  <select
+                    value={filters.tickets.availability}
+                    onChange={(e) => updateResourceFilter("tickets", "availability", e.target.value)}
+                  >
+                    <option value="">Any availability</option>
+                    <option value="available">Available</option>
+                    <option value="soldOut">Sold out</option>
+                  </select>
+                  <input
+                    type="number"
+                    min="0"
+                    placeholder="Min price"
+                    value={filters.tickets.minPrice}
+                    onChange={(e) => updateResourceFilter("tickets", "minPrice", e.target.value)}
+                  />
+                  <input
+                    type="number"
+                    min="0"
+                    placeholder="Max price"
+                    value={filters.tickets.maxPrice}
+                    onChange={(e) => updateResourceFilter("tickets", "maxPrice", e.target.value)}
+                  />
                 </div>
               )}
 
@@ -850,7 +929,7 @@ function AdminDashboard() {
                 <div className="filter-bar">
                   <select
                     value={filters.users.roli}
-                    onChange={(e) => setFilters((f) => ({ ...f, users: { ...f.users, roli: e.target.value } }))}
+                    onChange={(e) => updateResourceFilter("users", "roli", e.target.value)}
                   >
                     <option value="">All roles</option>
                     <option value="user">User</option>

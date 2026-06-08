@@ -40,6 +40,113 @@ const getUploadedImages = (req) => {
 const isAdmin = (req) => req.user?.roli === "admin";
 const isOrganizer = (req) => req.user?.roli === "organizer";
 
+const parseBoolean = (value) => {
+    if (value === undefined) return null;
+    const normalized = trimString(value).toLowerCase();
+    if (["true", "1", "yes"].includes(normalized)) return true;
+    if (["false", "0", "no"].includes(normalized)) return false;
+    return null;
+};
+
+const parseNumberFilter = (value) => {
+    if (value === undefined || value === "") return null;
+    const parsed = Number(value);
+    return Number.isFinite(parsed) && parsed >= 0 ? parsed : null;
+};
+
+const parseDateFilter = (value) => {
+    if (!value) return null;
+    const parsed = new Date(value);
+    return Number.isNaN(parsed.getTime()) ? null : parsed;
+};
+
+const buildEventWhere = (query = {}) => {
+    const where = {};
+    const search = trimString(query.search || query.q);
+    const category = trimString(query.category || query.categoryId);
+    const location = trimString(query.location);
+    const creator = trimString(query.creator || query.creatorId || query.organizerId);
+    const status = trimString(query.status);
+    const minPrice = parseNumberFilter(query.minPrice);
+    const maxPrice = parseNumberFilter(query.maxPrice);
+    const date = parseDateFilter(query.date);
+    const upcoming = parseBoolean(query.upcoming);
+    const soldOut = parseBoolean(query.soldOut);
+    const available = parseBoolean(query.available);
+
+    if (search) {
+        where.titulli = { contains: search, mode: "insensitive" };
+    }
+
+    if (category && category !== "all") {
+        where.OR = [
+            { category_id: category },
+            { EventCategories: { emri: { equals: category, mode: "insensitive" } } },
+        ];
+    }
+
+    if (location) {
+        where.lokacioni = { contains: location, mode: "insensitive" };
+    }
+
+    if (creator) {
+        where.organizer_id = creator;
+    }
+
+    if (status) {
+        where.statusi = { equals: status, mode: "insensitive" };
+    }
+
+    if (date) {
+        const nextDay = new Date(date);
+        nextDay.setDate(nextDay.getDate() + 1);
+        where.data_fillimit = {
+            ...(where.data_fillimit || {}),
+            gte: date,
+            lt: nextDay,
+        };
+    }
+
+    if (upcoming === true) {
+        where.data_fillimit = {
+            ...(where.data_fillimit || {}),
+            gte: new Date(),
+        };
+    }
+
+    if (minPrice !== null || maxPrice !== null) {
+        where.Tickets = {
+            some: {
+                cmimi: {
+                    ...(minPrice !== null ? { gte: minPrice } : {}),
+                    ...(maxPrice !== null ? { lte: maxPrice } : {}),
+                },
+            },
+        };
+    }
+
+    if (available === true) {
+        where.Tickets = {
+            some: {
+                ...(where.Tickets?.some || {}),
+                sasia: { gt: 0 },
+            },
+        };
+    }
+
+    if (soldOut === true) {
+        where.Tickets = {
+            ...(where.Tickets || {}),
+            some: where.Tickets?.some || {},
+            every: {
+                sasia: { lte: 0 },
+            },
+        };
+    }
+
+    return where;
+};
+
 const buildEventImages = (req, fallbackImageValue = null) => {
     const uploadedImages = getUploadedImages(req);
     const bodyImages = parseEventImages(req.body.imazhi);
@@ -51,11 +158,20 @@ const buildEventImages = (req, fallbackImageValue = null) => {
 
 const getEvents = async (req, res) => {
   try {
+    const where = buildEventWhere(req.query);
     const events = await db.events.findMany({
+      where,
       orderBy: {
         data_fillimit: 'asc',
       },
       include: {
+        EventCategories: true,
+        Tickets: {
+          select: {
+            cmimi: true,
+            sasia: true
+          }
+        },
         OrganizerUser: {
           select: {
             emri: true,
@@ -231,18 +347,20 @@ const deleteEvent = async (req, res) => {
 
 const getManagedEvents = async (req, res) => {
   try {
-    let queryConstraints = {};
+    const where = buildEventWhere(req.query);
 
     if (req.user.roli === "organizer") {
-      queryConstraints = {
-        where: { organizer_id: req.user.id }
-      };
+      where.organizer_id = req.user.id;
     }
 
     const events = await db.events.findMany({
-      ...queryConstraints,
+      where,
       orderBy: { data_fillimit: "asc" },
       include: {
+        EventCategories: true,
+        Tickets: {
+          select: { cmimi: true, sasia: true }
+        },
         OrganizerUser: {
           select: { emri: true, roli: true }
         }
