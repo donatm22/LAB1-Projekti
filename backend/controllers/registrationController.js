@@ -1,5 +1,7 @@
 const db = require("../../database/db");
+const crypto = require("crypto");
 const { buildPDF, generateTicketQR } = require("../services/ticketService");
+const { createNotification } = require("../services/notificationService");
 const {
   sendBookingConfirmation,
   sendBookingCancellation,
@@ -47,6 +49,8 @@ const getRegistrationDetails = async (id) => {
     ticket_price: result.Tickets?.cmimi || null,
   };
 };
+
+const buildQrData = (token) => JSON.stringify({ type: "ticket", token });
 
 const getRegistrations = async (req, res) => {
   try {
@@ -173,6 +177,8 @@ const createRegistration = async (req, res) => {
         data: { sasia: ticket.sasia - 1n },
       });
 
+      const qrToken = crypto.randomUUID();
+
       return await tx.registrations.create({
         data: {
           event_id: event_id,
@@ -180,6 +186,8 @@ const createRegistration = async (req, res) => {
           ticket_id: ticket_id,
           statusi: "pending",
           reminder_sent: false,
+          qr_token: qrToken,
+          qr_data: buildQrData(qrToken),
         },
       });
     });
@@ -192,6 +200,13 @@ const createRegistration = async (req, res) => {
     getRegistrationDetails(registration.id)
       .then((details) => {
         if (!details) return null;
+        createNotification({
+          userId: user_id,
+          title: "Bileta u rezervua",
+          message: `Rezervimi per ${details.event_name || "event"} u krijua me sukses.`,
+          type: "ticket",
+        }).catch((error) => console.error("Error creating notification:", error.message));
+
         return sendBookingConfirmation({
           userName: details.user_name,
           userEmail: details.user_email,
@@ -310,6 +325,7 @@ const getRegistrationPDF = async (req, res) => {
     const end = registration.event_end ? new Date(registration.event_end) : null;
     const ticket = {
       ticketId: registration.id,
+      qrData: registration.qr_data || registration.qr_token || registration.id,
       eventName: registration.event_name || "Event",
       eventDate: start ? start.toLocaleDateString() : "TBA",
       eventTime: start ? `${start.toLocaleTimeString()}${end ? ` - ${end.toLocaleTimeString()}` : ""}` : "TBA",
@@ -340,7 +356,9 @@ const getRegistrationQRCode = async (req, res) => {
       return res.status(403).json({ message: "Access denied" });
     }
 
-    const qrBuffer = await generateTicketQR(registration.id);
+    const qrBuffer = await generateTicketQR(
+      registration.qr_data || registration.qr_token || registration.id
+    );
 
     res.writeHead(200, {
       "Content-Type": "image/png",
@@ -348,6 +366,56 @@ const getRegistrationQRCode = async (req, res) => {
     });
 
     return res.end(qrBuffer);
+  } catch (err) {
+    return res.status(500).json({ error: err.message });
+  }
+};
+
+const verifyRegistrationQRCode = async (req, res) => {
+  try {
+    const token = req.body?.token || req.query?.token;
+
+    if (!token) {
+      return res.status(400).json({ message: "Token mungon" });
+    }
+
+    const registration = await db.registrations.findFirst({
+      where: { qr_token: token },
+      include: {
+        Users: { select: { emri: true, email: true } },
+        Events: { select: { titulli: true, organizer_id: true, data_fillimit: true } },
+        Tickets: { select: { tipi: true } },
+      },
+    });
+
+    if (!registration) {
+      return res.status(404).json({ valid: false, message: "QR code nuk eshte valid" });
+    }
+
+    if (
+      isOrganizer(req) &&
+      String(registration.Events?.organizer_id) !== String(req.user?.id)
+    ) {
+      return res.status(403).json({ message: "Access denied" });
+    }
+
+    const updatedRegistration = await db.registrations.update({
+      where: { id: registration.id },
+      data: { qr_verified_at: new Date(), statusi: "confirmed" },
+    });
+
+    return res.json({
+      valid: true,
+      message: "QR code u verifikua",
+      registration: {
+        ...updatedRegistration,
+        attendee_name: registration.Users?.emri || null,
+        attendee_email: registration.Users?.email || null,
+        event_name: registration.Events?.titulli || null,
+        event_start: registration.Events?.data_fillimit || null,
+        ticket_type: registration.Tickets?.tipi || null,
+      },
+    });
   } catch (err) {
     return res.status(500).json({ error: err.message });
   }
@@ -363,4 +431,5 @@ module.exports = {
   deleteRegistration,
   getRegistrationPDF,
   getRegistrationQRCode,
+  verifyRegistrationQRCode,
 };

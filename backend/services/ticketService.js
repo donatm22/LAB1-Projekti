@@ -1,8 +1,7 @@
 const PDFDocument = require('pdfkit');
 const QRCode = require('qrcode');
 
-async function generateTicketQR(ticketId) {
-    const qrValue = `Ticket ID: ${ticketId}`;
+async function generateTicketQR(qrValue) {
 
     return QRCode.toBuffer(qrValue, {
         type: 'png',
@@ -12,7 +11,7 @@ async function generateTicketQR(ticketId) {
 }
 
 async function buildPDF(dataCallback, endCallback, ticket) {
-    const qrBuffer = await generateTicketQR(ticket.ticketId);
+    const qrBuffer = await generateTicketQR(ticket.qrData || ticket.ticketId);
 
     const doc = new PDFDocument({ size: [600, 250], margin: 0 });
 

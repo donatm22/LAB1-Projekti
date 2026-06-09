@@ -23,6 +23,7 @@ model Users {
   Feedback         Feedback[]
   RefreshTokens    RefreshTokens[]
   Registrations    Registrations[]
+  Notifications     Notifications[]
 }
 
 model Events {
@@ -147,11 +148,28 @@ model Registrations {
   data_regjistrimit DateTime?    @default(now()) @db.Timestamp(6)
   statusi           String?
   reminder_sent     Boolean      @default(false)
+  qr_token          String?      @unique
+  qr_data           String?
+  qr_verified_at    DateTime?    @db.Timestamp(6)
   Attendance        Attendance[]
   Payments          Payments[]
   Events            Events?      @relation(fields: [event_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
   Tickets           Tickets?     @relation(fields: [ticket_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
   Users             Users?       @relation(fields: [user_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+}
+
+model Notifications {
+  id         String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  user_id    String    @db.Uuid
+  title      String
+  message    String
+  type       String?   @default("info")
+  is_read    Boolean   @default(false)
+  created_at DateTime  @default(now()) @db.Timestamptz(6)
+  Users      Users     @relation(fields: [user_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+
+  @@index([user_id, is_read], map: "idx_notifications_user_read")
+  @@index([created_at], map: "idx_notifications_created_at")
 }
 
 model Speakers {

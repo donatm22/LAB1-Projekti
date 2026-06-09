@@ -18,6 +18,7 @@ BigInt.prototype.toJSON = function () {
 const express = require("express");
 const cors = require("cors");
 const path = require("path");
+const http = require("http");
 require("./config/env");
 const passport = require("passport");
 const db = require("../database/db");
@@ -40,12 +41,15 @@ const registrationRoutes = require("./routes/registrationRoutes")
 const venueRoutes = require("./routes/venueRoutes");
 const chatRoutes = require("./routes/chatRoutes");
 const emailRoutes = require("./routes/emailRoutes");
+const notificationRoutes = require("./routes/notificationRoutes");
 const { initializeReminderCron } = require("./cron/reminderCron");
+const { initializeSocket } = require("./services/socketService");
 
 require("./config/passport");
 
 
 const app = express();
+const server = http.createServer(app);
 
 const allowedOrigins = new Set(
   [
@@ -103,6 +107,18 @@ app.use("/registrations", registrationRoutes);
 app.use("/venues", venueRoutes);
 app.use("/chat", chatRoutes);
 app.use("/email", emailRoutes);
+app.use("/notifications", notificationRoutes);
+
+initializeSocket(server, {
+  origin(origin, callback) {
+    if (!origin || allowedOrigins.has(origin)) {
+      return callback(null, true);
+    }
+
+    return callback(new Error(`CORS blocked for origin: ${origin}`));
+  },
+  credentials: true,
+});
 
 // Initialize reminder cron job
 initializeReminderCron();
@@ -116,7 +132,7 @@ app.use((err, req, res, next) => {
 
 const PORT = process.env.PORT || 5000;
 
-app.listen(PORT, () => {
+server.listen(PORT, () => {
     console.log(`Serveri funksionon ne portin ${PORT}`);
     console.log(process.env.JWT_SECRET ? "JWT_SECRET loaded" : "JWT_SECRET missing");
 });

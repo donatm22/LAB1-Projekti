@@ -1,6 +1,7 @@
 import { useEffect, useMemo } from "react";
 import { useNavigate } from "react-router-dom";
 import Navbar from "../components/Navbar";
+import NotificationList from "../components/NotificationList";
 import { tokenStorage } from "../services/api";
 import "./Account.css";
 
@@ -75,6 +76,8 @@ function Account() {
             </div>
           </div>
         </section>
+
+        <NotificationList />
       </main>
     </div>
   );

@@ -501,4 +501,21 @@ export const emailApi = {
   },
 };
 
+export const notificationsApi = {
+  getAll(token = tokenStorage.getToken()) {
+    return request("/notifications", {
+      token,
+      useCache: false,
+    });
+  },
+  markAsRead(id, token = tokenStorage.getToken()) {
+    clearCache("/notifications");
+    return request(`/notifications/${id}/read`, {
+      method: "PUT",
+      token,
+      useCache: false,
+    });
+  },
+};
+
 export { request };
