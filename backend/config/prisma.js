@@ -20,7 +20,7 @@ function buildDatabaseUrl() {
   );
 
   if (String(process.env.DB_SSL).toLowerCase() === "true") {
-    url.searchParams.set("sslmode", "require");
+    url.searchParams.set("sslmode", "no-verify");
   }
 
   return url.toString();
