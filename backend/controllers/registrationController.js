@@ -1,4 +1,4 @@
-const db = require("../../database/db");
+const db = require("../config/prisma");
 const crypto = require("crypto");
 const { buildPDF, generateTicketQR } = require("../services/ticketService");
 const { createNotification } = require("../services/notificationService");

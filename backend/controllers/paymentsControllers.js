@@ -1,4 +1,4 @@
-const db = require("../../database/db");
+const db = require("../config/prisma");
 
 const isAdmin = (req) => req.user?.roli === "admin";
 const isOrganizer = (req) => req.user?.roli === "organizer";

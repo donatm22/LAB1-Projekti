@@ -1,4 +1,4 @@
-const db = require("../../database/db");
+const db = require("../config/prisma");
 const { isLettersOnly, trimString } = require("../utils/validation");
 
 const getEventCategories = async (req, res) => {
@@ -14,7 +14,7 @@ const getEventCategoriesById = async (req, res) => {
     try {
         const { id } = req.params;
         const category = await db.eventCategories.findUnique({
-            where: { id: parseInt(id) }
+            where: { id: String(id) }
         });
 
         if (!category) {
@@ -58,7 +58,7 @@ const updateEventCategories = async (req, res) => {
         }
 
         const updatedCategory = await db.eventCategories.update({
-            where: { id: parseInt(id) },
+            where: { id: String(id) },
             data: { emri: trimString(emri) }
         });
 
@@ -79,7 +79,7 @@ const deleteEventCategories = async (req, res) => {
         }
 
         await db.eventCategories.delete({
-            where: { id: parseInt(id) }
+            where: { id: String(id) }
         });
 
         res.status(200).json({ message: "Kategoria e Eventit eshte fshire me sukses" });

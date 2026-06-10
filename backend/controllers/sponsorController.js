@@ -1,4 +1,4 @@
-const db = require("../../database/db");
+const db = require("../config/prisma");
 
 const getSponsors = async (req, res) => {
   try {

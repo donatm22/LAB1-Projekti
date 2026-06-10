@@ -1,4 +1,4 @@
-const db = require("../../database/db");
+const db = require("../config/prisma");
 const { sendNotificationToUser } = require("./socketService");
 
 const createNotification = async ({ userId, title, message, type = "info" }) => {

@@ -1,4 +1,4 @@
-const db = require("../../database/db");
+const db = require("../config/prisma");
 
 const serializeFeedback = (data) => {
   if (!data) return null;

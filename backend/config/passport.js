@@ -2,11 +2,11 @@
 const passport = require("passport");
 const { Strategy: LocalStrategy } = require("passport-local");
 const bcrypt = require("bcryptjs");
-const db = require("../../database/db");
+const db = require("./prisma");
 
 const getUserByEmail = async (email) => {
   if (!email) return null;
-  return await db.users.findFirst({
+  return await db.users.findUnique({
     where: { email: email.toLowerCase().trim() },
   });
 };

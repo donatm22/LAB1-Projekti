@@ -21,7 +21,6 @@ const path = require("path");
 const http = require("http");
 require("./config/env");
 const passport = require("passport");
-const db = require("../database/db");
 const usersRoutes = require("./routes/usersRoutes");
 const authRoutes = require("./routes/authRoutes");
 const eventCategoriesRoutes = require("./routes/eventCategoriesRoutes");

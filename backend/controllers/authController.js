@@ -1,5 +1,5 @@
 require("../config/env");
-const db = require("../../database/db");
+const db = require("../config/prisma");
 const {
   ACCESS_TOKEN_EXPIRES_IN,
   clearRefreshTokenCookie,
@@ -50,8 +50,8 @@ const getCurrentSession = async (req, res) => {
       return res.status(401).json({ message: "Not authenticated" });
     }
 
-    const user = await db.users.findUnique({ 
-      where: { id: parseInt(req.user.id, 10) } 
+    const user = await db.users.findUnique({
+      where: { id: String(req.user.id) },
     });
 
     if (!user) return res.status(404).json({ message: "User not found" });

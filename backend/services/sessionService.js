@@ -1,7 +1,7 @@
 // backend/services/sessionService.js
 const crypto = require("crypto");
 const jwt = require("jsonwebtoken");
-const db = require("../../database/db");
+const db = require("../config/prisma");
 require("../config/env");
 
 const ACCESS_TOKEN_SECRET = process.env.JWT_SECRET;

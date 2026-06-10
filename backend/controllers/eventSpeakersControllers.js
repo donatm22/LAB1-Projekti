@@ -1,4 +1,4 @@
-const db = require("../../database/db");
+const db = require("../config/prisma");
 
 const getEventSpeakers = async (req, res) => {
   try {

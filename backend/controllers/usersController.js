@@ -1,5 +1,5 @@
 const bcrypt = require("bcryptjs");
-const db = require("../../database/db");
+const db = require("../config/prisma");
 const { sanitizeUser } = require("./authController");
 const { revokeUserRefreshSessions } = require("../services/sessionService");
 const { isLettersOnly, isValidEmail, trimString } = require("../utils/validation");

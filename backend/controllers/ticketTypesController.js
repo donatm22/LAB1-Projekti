@@ -1,4 +1,4 @@
-const db = require("../../database/db");
+const db = require("../config/prisma");
 
 const serializeTicketType = (data) => {
   if (!data) return null;
