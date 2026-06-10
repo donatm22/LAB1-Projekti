@@ -14,8 +14,6 @@ const EventsPage = () => {
   const [searchParams, setSearchParams] = useSearchParams();
   const activeFilter = searchParams.get("category") || "all";
   const searchQuery = (searchParams.get("q") || "").trim();
-  const minPrice = searchParams.get("minPrice") || "";
-  const maxPrice = searchParams.get("maxPrice") || "";
   const upcomingOnly = searchParams.get("upcoming") === "true";
   const availableOnly = searchParams.get("available") === "true";
 
@@ -55,8 +53,6 @@ const EventsPage = () => {
       .getAll({
         q: searchQuery,
         category: activeFilter === "all" ? "" : activeFilter,
-        minPrice,
-        maxPrice,
         upcoming: upcomingOnly ? "true" : "",
         available: availableOnly ? "true" : "",
       })
@@ -81,7 +77,7 @@ const EventsPage = () => {
     return () => {
       isMounted = false;
     };
-  }, [activeFilter, availableOnly, categories, maxPrice, minPrice, searchQuery, upcomingOnly]);
+  }, [activeFilter, availableOnly, categories, searchQuery, upcomingOnly]);
 
   const updateFilterParam = (key, value) => {
     const nextParams = new URLSearchParams(searchParams);
@@ -122,24 +118,6 @@ const EventsPage = () => {
             </div>
 
             <div className="advanced-filter-row" aria-label="Advanced event filters">
-              <label className="filter-field">
-                <span>Min price</span>
-                <input
-                  type="number"
-                  min="0"
-                  value={minPrice}
-                  onChange={(event) => updateFilterParam("minPrice", event.target.value)}
-                />
-              </label>
-              <label className="filter-field">
-                <span>Max price</span>
-                <input
-                  type="number"
-                  min="0"
-                  value={maxPrice}
-                  onChange={(event) => updateFilterParam("maxPrice", event.target.value)}
-                />
-              </label>
               <label className="filter-check">
                 <input
                   type="checkbox"
